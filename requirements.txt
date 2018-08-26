@@ -1,0 +1,4 @@
+pypinyin
+jieba
+pydub
+pyaudio
