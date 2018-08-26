@@ -18,13 +18,11 @@ from pypinyin import lazy_pinyin
 from parrots.num_util import num2chinese
 
 
-class TextToSpeech:
-    CHUNK = 1024
-    punctuation = ['，', '。', '？', '！', '“', '”', '；', '：', '（', "）", ":", \
-                   ";", ",", ".", "?", "!", "\"", "\'", "(", ")"]
-
-    def __init__(self):
-        pass
+class TextToSpeech(object):
+    def __init__(self, syllables_path='./data/syllables'):
+        self.syllables_path = syllables_path
+        self.punctuation = ['，', '。', '？', '！', '“', '”', '；', '：', '（', '）',
+                            ':', ';', ',', '.', '?', '!', '\"', "\'", '(', ')']
 
     def speak(self, text):
         syllables = lazy_pinyin(text, style=pypinyin.TONE3)
@@ -34,7 +32,7 @@ class TextToSpeech:
         def preprocess(syllables):
             temp = []
             for syllable in syllables:
-                for p in TextToSpeech.punctuation:
+                for p in self.punctuation:
                     syllable = syllable.replace(p, "")
                 if syllable.isdigit():
                     syllable = num2chinese(syllable)
@@ -47,8 +45,8 @@ class TextToSpeech:
 
         syllables = preprocess(syllables)
         for syllable in syllables:
-            path = "syllables/" + syllable + ".wav"
-            _thread.start_new_thread(TextToSpeech._play_audio, (path, delay))
+            path = os.path.join(self.syllables_path, syllable + ".wav")
+            _thread.start_new_thread(TextToSpeech.play_audio, (path, delay))
             delay += 0.355
 
     def synthesize(self, text, src, dst):
@@ -70,7 +68,7 @@ class TextToSpeech:
             print(path)
             sound_file = Path(path)
             # insert 500 ms silence for punctuation marks
-            if syllable in TextToSpeech.punctuation:
+            if syllable in self.punctuation:
                 short_silence = AudioSegment.silent(duration=pause)
                 result = result.overlay(short_silence, position=delay)
                 delay += increment
@@ -89,7 +87,7 @@ class TextToSpeech:
         result.export(directory + "generated.wav", format="wav")
         print("Exported.")
 
-    def _play_audio(path, delay):
+    def play_audio(path, delay, chunk=1024):
         try:
             time.sleep(delay)
             wf = wave.open(path, 'rb')
@@ -99,23 +97,18 @@ class TextToSpeech:
                             rate=wf.getframerate(),
                             output=True)
 
-            data = wf.readframes(TextToSpeech.CHUNK)
+            data = wf.readframes(chunk)
 
             while data:
                 stream.write(data)
-                data = wf.readframes(TextToSpeech.CHUNK)
+                data = wf.readframes(chunk)
 
             stream.stop_stream()
             stream.close()
 
             p.terminate()
             return
-        except:
-            pass
-
-
-if __name__ == '__main__':
-    tts = TextToSpeech()
-
-    while True:
-        tts.speak(input('输入中文：'))
+        except IOError as ioe:
+            print(ioe)
+        except Exception as e:
+            print(e)
