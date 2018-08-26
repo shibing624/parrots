@@ -4,3 +4,9 @@
 @description: 
 """
 
+import sys
+import os
+
+
+def tts(input_str):
+    return 'out:' + input_str

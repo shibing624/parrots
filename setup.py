@@ -58,10 +58,9 @@ setup(
     author='XuMing',
     author_email='xuming624@qq.com',
     url='https://github.com/shibing624/parrots',
-    license="Apache License 2.0",
+    license="MIT License",
     classifiers=[
         'Intended Audience :: Developers',
-        'License :: OSI Approved :: Apache License 2.0',
         'Operating System :: OS Independent',
         'Natural Language :: Chinese (Simplified)',
         'Natural Language :: Chinese (Traditional)',
@@ -69,9 +68,6 @@ setup(
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
-        'Topic :: Speech',
-        'Topic :: Speech Recognition :: Indexing',
-        'Topic :: TTS :: Linguistic',
     ],
     keywords='TTS, chinese text to speech, speech',
     install_requires=[
