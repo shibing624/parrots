@@ -76,13 +76,12 @@ class TextToSpeech(object):
             _thread.start_new_thread(self._play_audio, (path, delay))
             delay += 0.355
 
-    def synthesize(self, input_text='', output_wav_path='./'):
+    def synthesize(self, input_text='', output_wav_path='./out.wav'):
         """
         Synthesize .wav from text
         input_text: the folder that contains all syllables .wav files
         output_wav_path: the destination folder to save the synthesized file
         """
-        print("Synthesizing ...")
         delay = 0
         increment = 355  # milliseconds
         pause = 500  # pause for punctuation
