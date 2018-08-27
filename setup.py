@@ -78,4 +78,6 @@ setup(
         'jieba'
     ],
     packages=find_packages(),
+    package_dir={'parrots': 'parrots'},
+    package_data={'parrots': ['*.*', 'data/*', 'utils/*', 'data/pinyin2hanzi/*', 'data/speech_model/*']}
 )

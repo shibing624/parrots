@@ -9,7 +9,7 @@ from .pinyin2hanzi import Pinyin2Hanzi
 from .speech_recognition import SpeechRecognition
 from .tts import TextToSpeech
 
-__version__ = '0.1.1'
+__version__ = '0.1.2'
 _pwd_path = os.path.abspath(os.path.dirname(__file__))
 _get_abs_path = lambda path: os.path.normpath(os.path.join(_pwd_path, path))
 
