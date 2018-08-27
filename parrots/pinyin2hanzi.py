@@ -17,7 +17,7 @@ class Pinyin2Hanzi(object):
         self.pinyin = self.GetPinyin(os.path.join(model_dir, 'dic_pinyin.txt'))
         self.model = (self.dict_pinyin, self.model1, self.model2)
 
-    def pinyin_2_text(self, list_syllable):
+    def pinyin_2_hanzi(self, list_syllable):
         '''
         为语音识别专用的处理函数
         实现从语音拼音符号到最终文本的转换

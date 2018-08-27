@@ -3,7 +3,7 @@
 @author:XuMing（xuming624@qq.com)
 @description:
 """
-
+import os
 import numpy as np
 from keras import backend as K
 from keras.layers import Dense, Dropout, Input, Reshape  # , Flatten
@@ -28,9 +28,19 @@ class SpeechRecognition(object):
         self.AUDIO_LENGTH = 1600
         self.AUDIO_FEATURE_LENGTH = 200
         self._model, self.base_model = self.create_model()
-        self.pinyin_list = get_pinyin_list(pinyin_path)  # 获取拼音列表
-        self._model.load_weights(model_path)
-        self.base_model.load_weights(model_path + '.base')
+        pwd_path = os.path.abspath(os.path.dirname(__file__))
+        try:
+            self.pinyin_list = get_pinyin_list(pinyin_path)  # 获取拼音列表
+        except IOError:
+            pinyin_path = os.path.join(pwd_path, '..', pinyin_path)
+            self.pinyin_list = get_pinyin_list(pinyin_path)  # 获取拼音列表
+        try:
+            self._model.load_weights(model_path)
+            self.base_model.load_weights(model_path + '.base')
+        except IOError:
+            model_path = os.path.join(pwd_path, '..', model_path)
+            self._model.load_weights(model_path)
+            self.base_model.load_weights(model_path + '.base')
 
     def create_model(self):
         """

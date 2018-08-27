@@ -19,8 +19,8 @@ from parrots.num_util import num2chinese
 
 
 class TextToSpeech(object):
-    def __init__(self, syllables_path='./data/syllables'):
-        self.syllables_path = syllables_path
+    def __init__(self, syllables_dir='./data/syllables'):
+        self.syllables_dir = syllables_dir
         # TODO: 分数的读法 2.11 待修复，如何添加'.'
         self.punctuation = ['，', '。', '？', '！', '“', '”', '；', '：', '（', '）',
                             '.', ':', ';', ',', '?', '!', '\"', "\'", '(', ')']
@@ -72,7 +72,7 @@ class TextToSpeech(object):
 
         syllables = preprocess(syllables)
         for syllable in syllables:
-            path = os.path.join(self.syllables_path, syllable + ".wav")
+            path = os.path.join(self.syllables_dir, syllable + ".wav")
             _thread.start_new_thread(self._play_audio, (path, delay))
             delay += 0.355
 
@@ -90,7 +90,7 @@ class TextToSpeech(object):
         # initialize to be complete silence, each character takes up ~500ms
         result = AudioSegment.silent(duration=500 * len(input_text))
         for syllable in syllables:
-            path = os.path.join(self.syllables_path, syllable + ".wav")
+            path = os.path.join(self.syllables_dir, syllable + ".wav")
             sound_file = Path(path)
             # insert 500 ms silence for punctuation marks
             if syllable in self.punctuation:

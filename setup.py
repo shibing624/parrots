@@ -3,6 +3,7 @@
 # Brief: 
 from __future__ import print_function
 from setuptools import setup, find_packages
+from parrots import __version__
 
 long_description = '''
 ## Usage
@@ -52,7 +53,7 @@ output:
 
 setup(
     name='parrots',
-    version='0.1.0',
+    version=__version__,
     description='Chinese Text To Speech and Speech Recognition',
     long_description=long_description,
     author='XuMing',

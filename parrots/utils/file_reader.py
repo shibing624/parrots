@@ -5,7 +5,7 @@
 """
 
 
-def get_pinyin_list(dict_path='data/pinyin_hanzi_dict.txt'):
+def get_pinyin_list(dict_path=''):
     """
     加载拼音符号列表，用于标记符号
     :param dict_path: 拼音符号列表
