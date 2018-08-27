@@ -77,6 +77,7 @@ class TextToSpeech(object):
         threads = []
         for syllable in syllables:
             path = os.path.join(self.syllables_dir, syllable + ".wav")
+            if not os.path.exists(path): continue
             t = threading.Thread(target=self._play_audio, args=(path, delay))
             threads.append(t)
             delay += 0.355
