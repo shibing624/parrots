@@ -11,18 +11,18 @@ import os
 
 class Pinyin2Hanzi(object):
     def __init__(self, model_dir='./data/pinyin2hanzi'):
-        self.dict_pinyin = self.GetSymbolDict(os.path.join(model_dir, '..', 'pinyin_hanzi_dict.txt'))
-        self.model1 = self.GetLanguageModel(os.path.join(model_dir, 'char_idx.txt'))
-        self.model2 = self.GetLanguageModel(os.path.join(model_dir, 'word_idx.txt'))
-        self.pinyin = self.GetPinyin(os.path.join(model_dir, 'dic_pinyin.txt'))
+        self.dict_pinyin = self.get_symbol_dict(os.path.join(model_dir, '..', 'pinyin_hanzi_dict.txt'))
+        self.model1 = self.get_model_file(os.path.join(model_dir, 'char_idx.txt'))
+        self.model2 = self.get_model_file(os.path.join(model_dir, 'word_idx.txt'))
+        self.pinyin = self.get_pinyin(os.path.join(model_dir, 'dic_pinyin.txt'))
         self.model = (self.dict_pinyin, self.model1, self.model2)
 
     def pinyin_2_hanzi(self, list_syllable):
-        '''
-        为语音识别专用的处理函数
-        实现从语音拼音符号到最终文本的转换
-        尚未完成
-        '''
+        """
+        语音拼音 => 文本
+        :param list_syllable:
+        :return:
+        """
         r = ''
         length = len(list_syllable)
         if not length:  # 传入的参数没有包含任何拼音时
@@ -47,15 +47,10 @@ class Pinyin2Hanzi(object):
                     r += str_decode[0][0]
                 # 再重新从i+1开始作为第一个拼音
                 str_tmp = [list_syllable[i + 1]]
-
         # print('最后：', str_tmp)
         str_decode = self.decode(str_tmp, 0.0000)
-
-        # print('剩余解码：',str_decode)
-
-        if (str_decode != []):
+        if str_decode:
             r += str_decode[0][0]
-
         return r
 
     def decode(self, list_syllable, yuzhi=0.0001):
@@ -137,14 +132,14 @@ class Pinyin2Hanzi(object):
                     list_words[j] = tmp
 
         return list_words
-        pass
 
-    def GetSymbolDict(self, dictfilename):
-        '''
+    def get_symbol_dict(self, file_path):
+        """
         读取拼音汉字的字典文件
-        返回读取后的字典
-        '''
-        txt_obj = open(dictfilename, 'r', encoding='UTF-8')  # 打开文件并读入
+        :param file_path:
+        :return: 读取后的字典
+        """
+        txt_obj = open(file_path, 'r', encoding='UTF-8')  # 打开文件并读入
         txt_text = txt_obj.read()
         txt_obj.close()
         txt_lines = txt_text.split('\n')  # 文本分割
@@ -152,51 +147,46 @@ class Pinyin2Hanzi(object):
         dic_symbol = {}  # 初始化符号字典
         for i in txt_lines:
             list_symbol = []  # 初始化符号列表
-            if (i != ''):
+            if i:
                 txt_l = i.split('\t')
                 pinyin = txt_l[0]
                 for word in txt_l[1]:
                     list_symbol.append(word)
             dic_symbol[pinyin] = list_symbol
-
         return dic_symbol
 
-    def GetLanguageModel(self, modelLanFilename):
-        '''
+    def get_model_file(self, model_path):
+        """
         读取语言模型的文件
-        返回读取后的模型
-        '''
-        txt_obj = open(modelLanFilename, 'r', encoding='UTF-8')  # 打开文件并读入
+        :param model_path:
+        :return: 读取后的模型
+        """
+        txt_obj = open(model_path, 'r', encoding='UTF-8')  # 打开文件并读入
         txt_text = txt_obj.read()
         txt_obj.close()
         txt_lines = txt_text.split('\n')  # 文本分割
 
         dic_model = {}  # 初始化符号字典
         for i in txt_lines:
-            if (i != ''):
+            if i:
                 txt_l = i.split('\t')
                 if (len(txt_l) == 1):
                     continue
-                # print(txt_l)
                 dic_model[txt_l[0]] = txt_l[1]
-
         return dic_model
 
-    def GetPinyin(self, filename):
+    def get_pinyin(self, filename):
         file_obj = open(filename, 'r', encoding='UTF-8')
         txt_all = file_obj.read()
         file_obj.close()
 
         txt_lines = txt_all.split('\n')
         dic = {}
-
         for line in txt_lines:
-            if (line == ''):
+            if not line:
                 continue
             pinyin_split = line.split('\t')
-
             list_pinyin = pinyin_split[0]
-
-            if (list_pinyin not in dic and int(pinyin_split[1]) > 1):
+            if (list_pinyin not in dic) and int(pinyin_split[1]) > 1:
                 dic[list_pinyin] = pinyin_split[1]
         return dic

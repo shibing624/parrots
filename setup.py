@@ -23,7 +23,7 @@ input:
 ```
 import parrots
 
-text = parrots.speech_recognition('./16k.wav')
+text = parrots.speech_recognition_from_file('./16k.wav')
 print(text)
 
 ```
@@ -38,7 +38,7 @@ input:
 ```
 import parrots
 
-audio_file_path = parrots.tts('北京图书馆')
+audio_file_path = parrots.synthesize('北京图书馆')
 print(audio_file_path)
 
 ```

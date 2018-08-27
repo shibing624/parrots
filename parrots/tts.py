@@ -4,8 +4,8 @@
 @description: 
 """
 
-import _thread
 import os
+import threading
 import time
 import wave
 from pathlib import Path
@@ -16,6 +16,9 @@ from pydub import AudioSegment
 from pypinyin import lazy_pinyin
 
 from parrots.num_util import num2chinese
+from parrots.utils.io_util import get_logger
+
+default_logger = get_logger(__file__)
 
 
 class TextToSpeech(object):
@@ -47,13 +50,13 @@ class TextToSpeech(object):
             p.terminate()
             return
         except IOError as ioe:
-            print(ioe)
+            default_logger.error(ioe)
         except Exception as e:
-            print(e)
+            default_logger.error(e)
 
     def speak(self, text):
         syllables = lazy_pinyin(text, style=pypinyin.TONE3)
-        print(syllables)
+        default_logger.info(syllables)
         delay = 0
 
         def preprocess(syllables):
@@ -71,10 +74,15 @@ class TextToSpeech(object):
             return temp
 
         syllables = preprocess(syllables)
+        threads = []
         for syllable in syllables:
             path = os.path.join(self.syllables_dir, syllable + ".wav")
-            _thread.start_new_thread(self._play_audio, (path, delay))
+            t = threading.Thread(target=self._play_audio, args=(path, delay))
+            threads.append(t)
             delay += 0.355
+        for t in threads:
+            t.start()
+        t.join()
 
     def synthesize(self, input_text='', output_wav_path='./out.wav'):
         """
@@ -106,4 +114,5 @@ class TextToSpeech(object):
             delay += increment
 
         result.export(output_wav_path, format="wav")
-        print("Exported:" + output_wav_path)
+        print(output_wav_path)
+        default_logger.info("Exported:" + output_wav_path)

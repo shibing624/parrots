@@ -3,7 +3,6 @@
 @author:XuMing（xuming624@qq.com)
 @description: 
 """
-
 import os
 
 from .pinyin2hanzi import Pinyin2Hanzi

@@ -13,6 +13,10 @@ from keras.optimizers import Adam
 
 from parrots.utils.file_reader import get_pinyin_list
 from parrots.utils.wav_util import get_frequency_features, read_wav_data
+from parrots.utils.io_util import get_logger
+import time
+
+default_logger = get_logger(__file__)
 
 
 class SpeechRecognition(object):
@@ -28,19 +32,38 @@ class SpeechRecognition(object):
         self.AUDIO_LENGTH = 1600
         self.AUDIO_FEATURE_LENGTH = 200
         self._model, self.base_model = self.create_model()
+        self.initialized = False
+        self.pinyin_path = pinyin_path
+        self.model_path = model_path
+
+    def initialize(self):
         pwd_path = os.path.abspath(os.path.dirname(__file__))
-        try:
-            self.pinyin_list = get_pinyin_list(pinyin_path)  # 获取拼音列表
-        except IOError:
-            pinyin_path = os.path.join(pwd_path, '..', pinyin_path)
-            self.pinyin_list = get_pinyin_list(pinyin_path)  # 获取拼音列表
-        try:
-            self._model.load_weights(model_path)
-            self.base_model.load_weights(model_path + '.base')
-        except IOError:
-            model_path = os.path.join(pwd_path, '..', model_path)
-            self._model.load_weights(model_path)
-            self.base_model.load_weights(model_path + '.base')
+        if self.pinyin_path:
+            t1 = time.time()
+            try:
+                self.pinyin_list = get_pinyin_list(self.pinyin_path)  # 获取拼音列表
+            except IOError:
+                pinyin_path = os.path.join(pwd_path, '..', self.pinyin_path)
+                self.pinyin_list = get_pinyin_list(pinyin_path)  # 获取拼音列表
+            default_logger.debug(
+                "Loading pinyin dict cost %.3f seconds." % (time.time() - t1))
+        if self.model_path:
+            t2 = time.time()
+            try:
+                self._model.load_weights(self.model_path)
+                self.base_model.load_weights(self.model_path + '.base')
+            except IOError:
+                model_path = os.path.join(pwd_path, '..', self.model_path)
+                self._model.load_weights(model_path)
+                self.base_model.load_weights(model_path + '.base')
+            self.initialized = True
+            default_logger.debug(
+                "Loading model cost %.3f seconds." % (time.time() - t2))
+            default_logger.debug("Speech recognition model has been built ok.")
+
+    def check_initialized(self):
+        if not self.initialized:
+            self.initialize()
 
     def create_model(self):
         """
@@ -131,8 +154,7 @@ class SpeechRecognition(object):
         # captures output of softmax so we can decode the output during visualization
         test_func = K.function([input_data], [y_pred])
 
-        # print('[*提示] 创建模型成功，模型编译成功')
-        print('[*Info] Create Model Successful, Compiles Model Successful. ')
+        default_logger.info('Create Model Successful, Compiles Model Successful. ')
         return model, model_data
 
     def ctc_lambda_func(self, args):
@@ -171,6 +193,7 @@ class SpeechRecognition(object):
         :param fs:
         :return:
         """
+        self.check_initialized()
         data_input = get_frequency_features(wavsignal, fs)
         # t1=time.time()
         # print('time cost:',t1-t0)
@@ -205,4 +228,5 @@ class SpeechRecognition(object):
         model
         :return: keras model
         """
+        self.check_initialized()
         return self._model
