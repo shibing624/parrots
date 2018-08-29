@@ -50,9 +50,9 @@ class TextToSpeech(object):
             p.terminate()
             return
         except IOError as ioe:
-            default_logger.error(ioe)
+            default_logger.warn(ioe)
         except Exception as e:
-            default_logger.error(e)
+            default_logger.warn(e)
 
     def speak(self, text):
         syllables = lazy_pinyin(text, style=pypinyin.TONE3)
@@ -115,5 +115,5 @@ class TextToSpeech(object):
             delay += increment
 
         result.export(output_wav_path, format="wav")
-        print(output_wav_path)
-        default_logger.info("Exported:" + output_wav_path)
+        default_logger.debug("Exported:" + output_wav_path)
+        return result

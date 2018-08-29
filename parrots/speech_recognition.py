@@ -4,6 +4,8 @@
 @description:
 """
 import os
+import time
+
 import numpy as np
 from keras import backend as K
 from keras.layers import Dense, Dropout, Input, Reshape  # , Flatten
@@ -12,9 +14,8 @@ from keras.models import Model
 from keras.optimizers import Adam
 
 from parrots.utils.file_reader import get_pinyin_list
-from parrots.utils.wav_util import get_frequency_features, read_wav_data
 from parrots.utils.io_util import get_logger
-import time
+from parrots.utils.wav_util import get_frequency_features, read_wav_data
 
 default_logger = get_logger(__file__)
 
@@ -116,12 +117,7 @@ class SpeechRecognition(object):
                            kernel_initializer='he_normal')(layer_h13)  # 卷积层
         layer_h15 = MaxPooling2D(pool_size=1, strides=None, padding="valid")(layer_h14)  # 池化层
 
-        # test=Model(inputs = input_data, outputs = layer_h12)
-        # test.summary()
-
         layer_h16 = Reshape((200, 3200))(layer_h15)  # Reshape层
-        # layer_h5 = LSTM(256, activation='relu', use_bias=True, return_sequences=True)(layer_h4) # LSTM层
-        # layer_h6 = Dropout(0.2)(layer_h5) # 随机中断部分神经网络连接，防止过拟合
         layer_h16 = Dropout(0.3)(layer_h16)
         layer_h17 = Dense(128, activation="relu", use_bias=True, kernel_initializer='he_normal')(layer_h16)  # 全连接层
         layer_h17 = Dropout(0.3)(layer_h17)
@@ -136,25 +132,17 @@ class SpeechRecognition(object):
         label_length = Input(name='label_length', shape=[1], dtype='int64')
         # Keras doesn't currently support loss funcs with extra parameters
         # so CTC loss is implemented in a lambda layer
-
-        # layer_out = Lambda(ctc_lambda_func,output_shape=(self.MS_OUTPUT_SIZE, ), name='ctc')([y_pred, labels, input_length, label_length])#(layer_h6) # CTC
         loss_out = Lambda(self.ctc_lambda_func, output_shape=(1,), name='ctc')(
             [y_pred, labels, input_length, label_length])
 
         model = Model(inputs=[input_data, labels, input_length, label_length], outputs=loss_out)
-
         # model.summary()
 
-        # clipnorm seems to speeds up convergence
-        # sgd = SGD(lr=0.0001, decay=1e-6, momentum=0.9, nesterov=True, clipnorm=5)
-        # opt = Adadelta(lr = 0.01, rho = 0.95, epsilon = 1e-06)
+        # clip norm seems to speeds up convergence
         opt = Adam(lr=0.001, beta_1=0.9, beta_2=0.999, decay=0.0, epsilon=10e-8)
         model.compile(loss={'ctc': lambda y_true, y_pred: y_pred}, optimizer=opt)
 
-        # captures output of softmax so we can decode the output during visualization
-        test_func = K.function([input_data], [y_pred])
-
-        default_logger.info('Create Model Successful, Compiles Model Successful. ')
+        default_logger.debug('Create Model Successful, Compiles Model Successful. ')
         return model, model_data
 
     def ctc_lambda_func(self, args):
