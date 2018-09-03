@@ -28,6 +28,9 @@ class TextToSpeech(object):
         self.punctuation = ['，', '。', '？', '！', '“', '”', '；', '：', '（', '）',
                             '.', ':', ';', ',', '?', '!', '\"', "\'", '(', ')']
 
+    def update_syllables_dir(self, new_dir):
+        self.syllables_dir = new_dir
+
     def _play_audio(self, path, delay, chunk=1024):
         try:
             time.sleep(delay)
@@ -101,7 +104,7 @@ class TextToSpeech(object):
         for syllable in syllables:
             path = os.path.join(self.syllables_dir, syllable + ".wav")
             sound_file = Path(path)
-            # insert 500 ms silence for punctuation marks
+            # insert 500 sr silence for punctuation marks
             if syllable in self.punctuation:
                 short_silence = AudioSegment.silent(duration=pause)
                 result = result.overlay(short_silence, position=delay)

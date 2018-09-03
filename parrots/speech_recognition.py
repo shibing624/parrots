@@ -7,6 +7,7 @@ import os
 import time
 
 import numpy as np
+import tensorflow as tf
 from keras import backend as K
 from keras.layers import Dense, Dropout, Input, Reshape  # , Flatten
 from keras.layers import Lambda, Activation, Conv2D, MaxPooling2D  # , Merge
@@ -61,6 +62,7 @@ class SpeechRecognition(object):
             default_logger.debug(
                 "Loading model cost %.3f seconds." % (time.time() - t2))
             default_logger.debug("Speech recognition model has been built ok.")
+            self.graph = tf.get_default_graph()
 
     def check_initialized(self):
         if not self.initialized:
@@ -165,8 +167,8 @@ class SpeechRecognition(object):
 
         for i in range(batch_size):
             x_in[i, 0:len(data_input)] = data_input
-
-        base_pred = self.base_model.predict(x=x_in)
+        with self.graph.as_default():
+            base_pred = self.base_model.predict(x=x_in)
         base_pred = base_pred[:, :, :]
         r = K.ctc_decode(base_pred, in_len, greedy=True, beam_width=100, top_paths=1)
         r1 = K.get_value(r[0][0])
@@ -182,24 +184,16 @@ class SpeechRecognition(object):
         :return:
         """
         self.check_initialized()
+        result = []
         data_input = get_frequency_features(wavsignal, fs)
-        # t1=time.time()
-        # print('time cost:',t1-t0)
-
         input_length = len(data_input)
         input_length = input_length // 8
-
         data_input = np.array(data_input, dtype=np.float)
-        # print(data_input,data_input.shape)
         data_input = data_input.reshape(data_input.shape[0], data_input.shape[1], 1)
-        # t2=time.time()
-        r1 = self.predict(data_input, input_length)
-        # t3=time.time()
-        # print('time cost:',t3-t2)
-        r_str = []
-        for i in r1:
-            r_str.append(self.pinyin_list[i])
-        return r_str
+        preds = self.predict(data_input, input_length)
+        for i in preds:
+            result.append(self.pinyin_list[i])
+        return result
 
     def recognize_speech_from_file(self, filename):
         """
@@ -207,8 +201,8 @@ class SpeechRecognition(object):
         :param filename: 识别指定文件名的语音
         :return:
         """
-        wavsignal, fs = read_wav_data(filename)
-        return self.recognize_speech(wavsignal, fs)
+        signal, fs = read_wav_data(filename)
+        return self.recognize_speech(signal, fs)
 
     @property
     def model(self):
