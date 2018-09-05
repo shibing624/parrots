@@ -144,7 +144,7 @@ class SpeechRecognition(object):
         opt = Adam(lr=0.001, beta_1=0.9, beta_2=0.999, decay=0.0, epsilon=10e-8)
         model.compile(loss={'ctc': lambda y_true, y_pred: y_pred}, optimizer=opt)
 
-        default_logger.debug('Create Model Successful, Compiles Model Successful. ')
+        # default_logger.debug('Create Model Successful, Compiles Model Successful. ')
         return model, model_data
 
     def ctc_lambda_func(self, args):
