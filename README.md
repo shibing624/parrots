@@ -16,6 +16,11 @@ cd pyrrots
 python3 setup.py install
 ```
 
+## demo
+
+http://www.borntowin.cn/speech
+
+
 ## usage
 ### speech recognition
 input:
