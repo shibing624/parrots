@@ -1,5 +1,5 @@
 # parrots
-speech recognition, text-to-speech(TTS) engine.
+Automatic Speech Recognition(ASR), Text-To-Speech(TTS) engine.
 
 
 ## install
@@ -12,7 +12,7 @@ pip3 install -r requirements.txt
 * Or
 ```
 git clone https://github.com/shibing624/parrots.git
-cd pyrrots
+cd parrots
 python3 setup.py install
 ```
 
