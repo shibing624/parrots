@@ -7,11 +7,19 @@
 基于马尔可夫模型的语言模型
 """
 import os
+from parrots import config
+from parrots.utils.io_util import get_logger
+
+default_logger = get_logger(__file__)
+
+pwd_path = os.path.abspath(os.path.dirname(__file__))
+get_abs_path = lambda path: os.path.normpath(os.path.join(pwd_path, path))
 
 
 class Pinyin2Hanzi(object):
-    def __init__(self, model_dir='./data/pinyin2hanzi'):
-        self.dict_pinyin = self.get_symbol_dict(os.path.join(model_dir, '..', 'pinyin_hanzi_dict.txt'))
+    def __init__(self, model_dir=config.pinyin2hanzi_dir):
+        model_dir = get_abs_path(model_dir)
+        self.dict_pinyin = self.get_symbol_dict(os.path.join(model_dir, 'pinyin_hanzi_dict.txt'))
         self.model1 = self.get_model_file(os.path.join(model_dir, 'char_idx.txt'))
         self.model2 = self.get_model_file(os.path.join(model_dir, 'word_idx.txt'))
         self.pinyin = self.get_pinyin(os.path.join(model_dir, 'dic_pinyin.txt'))
@@ -69,7 +77,7 @@ class Pinyin2Hanzi(object):
         for i in range(num_pinyin):
             # print(i)
             ls = ''
-            if (list_syllable[i] in self.dict_pinyin):  # 如果这个拼音在汉语拼音字典里的话
+            if list_syllable[i] in self.dict_pinyin:  # 如果这个拼音在汉语拼音字典里的话
                 # 获取拼音下属的字的列表，ls包含了该拼音对应的所有的字
                 ls = self.dict_pinyin[list_syllable[i]]
             else:
@@ -106,7 +114,7 @@ class Pinyin2Hanzi(object):
 
                         tmp_words = tuple_word[0][-2:]  # 取出用于计算的最后两个字
                         # print('tmp_words: ',tmp_words,tmp_words in self.model2)
-                        if (tmp_words in self.model2):  # 判断它们是不是再状态转移表里
+                        if tmp_words in self.model2:  # 判断它们是不是再状态转移表里
                             # print(tmp_words,tmp_words in self.model2)
                             tuple_word[1] = tuple_word[1] * float(self.model2[tmp_words]) / float(
                                 self.model1[tmp_words[-2]])
@@ -117,7 +125,7 @@ class Pinyin2Hanzi(object):
                             continue
                         # print('tw2: ',tuple_word)
                         # print(tuple_word[1] >= pow(yuzhi, i))
-                        if (tuple_word[1] >= pow(yuzhi, i)):
+                        if tuple_word[1] >= pow(yuzhi, i):
                             # 大于阈值之后保留，否则丢弃
                             list_words_2.append(tuple_word)
 
@@ -153,6 +161,7 @@ class Pinyin2Hanzi(object):
                 for word in txt_l[1]:
                     list_symbol.append(word)
             dic_symbol[pinyin] = list_symbol
+        default_logger.debug('Loaded: %s, size: %d' %(file_path, len(dic_symbol)))
         return dic_symbol
 
     def get_model_file(self, model_path):
@@ -173,6 +182,7 @@ class Pinyin2Hanzi(object):
                 if (len(txt_l) == 1):
                     continue
                 dic_model[txt_l[0]] = txt_l[1]
+        default_logger.debug('Loaded: %s, size: %d' % (model_path, len(dic_model)))
         return dic_model
 
     def get_pinyin(self, filename):
@@ -189,4 +199,5 @@ class Pinyin2Hanzi(object):
             list_pinyin = pinyin_split[0]
             if (list_pinyin not in dic) and int(pinyin_split[1]) > 1:
                 dic[list_pinyin] = pinyin_split[1]
+        default_logger.debug('Loaded: %s, size: %d' % (filename, len(dic)))
         return dic

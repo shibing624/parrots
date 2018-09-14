@@ -14,32 +14,32 @@ from keras.layers import Lambda, Activation, Conv2D, MaxPooling2D  # , Merge
 from keras.models import Model
 from keras.optimizers import Adam
 
+from parrots import config
 from parrots.utils.file_reader import get_pinyin_list
 from parrots.utils.io_util import get_logger
 from parrots.utils.wav_util import get_frequency_features, read_wav_data
 
 default_logger = get_logger(__file__)
 
+pwd_path = os.path.abspath(os.path.dirname(__file__))
+get_abs_path = lambda path: os.path.normpath(os.path.join(pwd_path, path))
+
 
 class SpeechRecognition(object):
-    def __init__(self, pinyin_path='./data/pinyin_hanzi_dict.txt',
-                 model_path='./data/speech_model/speech_recognition.model'):
-        """
-        初始化
-        :param pinyin_path: pinyin file path
-        """
-        MS_OUTPUT_SIZE = 1422  # 默认输出的拼音的表示大小是1422，即1421个拼音+1个空白块
-        self.MS_OUTPUT_SIZE = MS_OUTPUT_SIZE  # 神经网络最终输出的每一个字符向量维度的大小
+    def __init__(self, pinyin_path=config.pinyin_hanzi_dict_path,
+                 model_path=config.speech_recognition_model_path,
+                 ms_output_size=1422):
+        # 默认输出的拼音的表示大小是1422，即1421个拼音+1个空白块
+        self.ms_output_size = ms_output_size  # 神经网络最终输出的每一个字符向量维度的大小
         self.label_max_string_length = 64
         self.AUDIO_LENGTH = 1600
         self.AUDIO_FEATURE_LENGTH = 200
-        self._model, self.base_model = self.create_model()
+        self.pinyin_path = get_abs_path(pinyin_path)
+        self.model_path = get_abs_path(model_path)
         self.initialized = False
-        self.pinyin_path = pinyin_path
-        self.model_path = model_path
 
     def initialize(self):
-        pwd_path = os.path.abspath(os.path.dirname(__file__))
+        self._model, self.base_model = self.create_model()
         if self.pinyin_path:
             t1 = time.time()
             try:
@@ -58,11 +58,11 @@ class SpeechRecognition(object):
                 model_path = os.path.join(pwd_path, '..', self.model_path)
                 self._model.load_weights(model_path)
                 self.base_model.load_weights(model_path + '.base')
-            self.initialized = True
             default_logger.debug(
                 "Loading model cost %.3f seconds." % (time.time() - t2))
             default_logger.debug("Speech recognition model has been built ok.")
             self.graph = tf.get_default_graph()
+            self.initialized = True
 
     def check_initialized(self):
         if not self.initialized:
@@ -74,7 +74,7 @@ class SpeechRecognition(object):
         输入层：200维的特征值序列，一条语音数据的最大长度设为1600（大约16s）
         隐藏层：卷积池化层，卷积核大小为3x3，池化窗口大小为2
         隐藏层：全连接层
-        输出层：全连接层，神经元数量为self.MS_OUTPUT_SIZE，使用softmax作为激活函数，
+        输出层：全连接层，神经元数量为self.ms_output_size，使用softmax作为激活函数，
         CTC层：使用CTC的loss作为损失函数，实现连接性时序多输出
         :return:
         """
@@ -123,7 +123,7 @@ class SpeechRecognition(object):
         layer_h16 = Dropout(0.3)(layer_h16)
         layer_h17 = Dense(128, activation="relu", use_bias=True, kernel_initializer='he_normal')(layer_h16)  # 全连接层
         layer_h17 = Dropout(0.3)(layer_h17)
-        layer_h18 = Dense(self.MS_OUTPUT_SIZE, use_bias=True, kernel_initializer='he_normal')(layer_h17)  # 全连接层
+        layer_h18 = Dense(self.ms_output_size, use_bias=True, kernel_initializer='he_normal')(layer_h17)  # 全连接层
 
         y_pred = Activation('softmax', name='Activation0')(layer_h18)
         model_data = Model(inputs=input_data, outputs=y_pred)
@@ -170,11 +170,9 @@ class SpeechRecognition(object):
         with self.graph.as_default():
             base_pred = self.base_model.predict(x=x_in)
         base_pred = base_pred[:, :, :]
-        r = K.ctc_decode(base_pred, in_len, greedy=True, beam_width=100, top_paths=1)
-        r1 = K.get_value(r[0][0])
-        # print('r1', r1)
-        r1 = r1[0]
-        return r1
+        decoder = K.ctc_decode(base_pred, in_len, greedy=True, beam_width=100, top_paths=1)
+        result = K.get_value(decoder[0][0])[0]
+        return result
 
     def recognize_speech(self, wavsignal, fs):
         """
