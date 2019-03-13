@@ -18,7 +18,7 @@ python3 setup.py install
 
 ## demo
 
-http://www.borntowin.cn/speech
+https://www.borntowin.cn/product/tts
 
 
 ## usage
