@@ -16,10 +16,6 @@ cd parrots
 python3 setup.py install
 ```
 
-## demo
-
-https://www.borntowin.cn/product/tts
-
 
 ## usage
 ### speech recognition
