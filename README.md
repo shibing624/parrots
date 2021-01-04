@@ -1,5 +1,5 @@
 # parrots
-Automatic Speech Recognition(ASR), Text-To-Speech(TTS) engine.
+parrots, Automatic Speech Recognition(ASR), Text-To-Speech(TTS) engine.
 
 
 ## install
