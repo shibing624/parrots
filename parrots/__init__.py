@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-@author:XuMing（xuming624@qq.com)
+@author:XuMing(xuming624@qq.com)
 @description: 
 """
 
@@ -8,7 +8,7 @@ from .pinyin2hanzi import Pinyin2Hanzi
 from .speech_recognition import SpeechRecognition
 from .tts import TextToSpeech
 
-__version__ = '0.1.4'
+__version__ = '0.1.5'
 
 sr = SpeechRecognition()
 recognize_speech_from_file = sr.recognize_speech_from_file

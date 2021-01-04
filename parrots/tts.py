@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-@author:XuMing（xuming624@qq.com)
+@author:XuMing(xuming624@qq.com)
 @description: 
 """
 
@@ -19,7 +19,7 @@ from parrots.num_util import num2chinese
 from parrots.utils.io_util import get_logger
 from parrots import config
 
-default_logger = get_logger(__file__)
+logger = get_logger(__file__)
 pwd_path = os.path.abspath(os.path.dirname(__file__))
 get_abs_path = lambda path: os.path.normpath(os.path.join(pwd_path, path))
 
@@ -28,7 +28,7 @@ class TextToSpeech(object):
     def __init__(self, syllables_dir=config.syllables_dir):
         self.syllables_dir = get_abs_path(syllables_dir)
         # TODO: 分数的读法 2.11 待修复，如何添加'.'
-        self.punctuation = ['，', '。', '？', '！', '“', '”', '；', '：', '（', '）',
+        self.punctuation = ['，', '。', '？', '！', '“', '”', '；', '：', '(', '）',
                             '.', ':', ';', ',', '?', '!', '\"', "\'", '(', ')']
 
     def update_syllables_dir(self, new_dir):
@@ -56,13 +56,13 @@ class TextToSpeech(object):
             p.terminate()
             return
         except IOError as ioe:
-            default_logger.warn(ioe)
+            logger.warn(ioe)
         except Exception as e:
-            default_logger.warn(e)
+            logger.warn(e)
 
     def speak(self, text):
         syllables = lazy_pinyin(text, style=pypinyin.TONE3)
-        default_logger.debug(syllables)
+        logger.debug(syllables)
         delay = 0
 
         def preprocess(syllables):
@@ -123,5 +123,5 @@ class TextToSpeech(object):
             output_wav_path = 'out.wav'
 
         result.export(output_wav_path, format="wav")
-        default_logger.debug("Exported:" + output_wav_path)
+        logger.debug("Exported:" + output_wav_path)
         return result

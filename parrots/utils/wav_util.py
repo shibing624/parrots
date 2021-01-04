@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-@author:XuMing（xuming624@qq.com)
+@author:XuMing(xuming624@qq.com)
 @description:
 """
 import math
@@ -14,9 +14,9 @@ from scipy.fftpack import fft
 
 
 def read_wav_data(filename):
-    '''
+    """
     读取一个wav文件，返回声音信号的时域谱矩阵和播放时间
-    '''
+    """
     wav = wave.open(filename, "rb")  # 打开一个wav格式的声音文件流
     num_frame = wav.getnframes()  # 获取帧数
     num_channel = wav.getnchannels()  # 获取声道数
@@ -86,14 +86,14 @@ def GetFrequencyFeature2(wavsignal, fs):
         p_end = p_start + 400
 
         data_line = wav_arr[0, p_start:p_end]
-        '''
+        """
         x=np.linspace(0, 400 - 1, 400, dtype = np.int64)
         w = 0.54 - 0.46 * np.cos(2 * np.pi * (x) / (400 - 1) ) # 汉明窗
         data_line = data_line * w # 加窗
-        '''
+        """
         data_line = np.abs(fft(data_line)) / wav_length
 
-        data_input[i] = data_line[0:200]  # 设置为400除以2的值（即200）是取一半数据，因为是对称的
+        data_input[i] = data_line[0:200]  # 设置为400除以2的值(即200）是取一半数据，因为是对称的
 
     # print(data_input.shape)
     return data_input
@@ -121,7 +121,7 @@ def get_frequency_features(wavsignal, fs):
         data_line = wav_arr[0, p_start:p_end]
         data_line = data_line * w  # 加窗
         data_line = np.abs(fft(data_line)) / wav_length
-        data_input[i] = data_line[0:200]  # 设置为400除以2的值（即200）是取一半数据，因为是对称的
+        data_input[i] = data_line[0:200]  # 设置为400除以2的值(即200）是取一半数据，因为是对称的
 
     # print(data_input.shape)
     data_input = np.log(data_input + 1)
@@ -129,9 +129,9 @@ def get_frequency_features(wavsignal, fs):
 
 
 def wav_scale(energy):
-    '''
+    """
     语音信号能量归一化
-    '''
+    """
     means = energy.mean()  # 均值
     var = energy.var()  # 方差
     e = (energy - means) / math.sqrt(var)  # 归一化能量
@@ -139,18 +139,18 @@ def wav_scale(energy):
 
 
 def wav_scale2(energy):
-    '''
+    """
     语音信号能量归一化
-    '''
+    """
     maxnum = max(energy)
     e = energy / maxnum
     return e
 
 
 def wav_scale3(energy):
-    '''
+    """
     语音信号能量归一化
-    '''
+    """
     for i in range(len(energy)):
         # if i == 1:
         #	#print('wavsignal[0]:\n {:.4f}'.format(energy[1]),energy[1] is int)
@@ -171,10 +171,10 @@ def wav_show(wave_data, fs):  # 显示出来声音波形
 
 
 def get_wav_list(filename):
-    '''
+    """
     读取一个wav文件列表，返回一个存储该列表的字典类型值
     ps:在数据中专门有几个文件用于存放用于训练、验证和测试的wav文件列表
-    '''
+    """
     txt_obj = open(filename, 'r')  # 打开文件并读入
     txt_text = txt_obj.read()
     txt_lines = txt_text.split('\n')  # 文本分割
@@ -190,10 +190,10 @@ def get_wav_list(filename):
 
 
 def get_wav_symbol(filename):
-    '''
+    """
     读取指定数据集中，所有wav文件对应的语音符号
     返回一个存储符号集的字典类型值
-    '''
+    """
     txt_obj = open(filename, 'r')  # 打开文件并读入
     txt_text = txt_obj.read()
     txt_lines = txt_text.split('\n')  # 文本分割

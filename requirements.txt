@@ -1,4 +1,5 @@
-pypinyin
-jieba
-pydub
-pyaudio
+pypinyin==0.37.0
+jieba==0.42.1
+pydub==0.24.1
+pyaudio==0.2.11
+tensorflow>=1.13.1

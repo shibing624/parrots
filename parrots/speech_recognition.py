@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-@author:XuMing（xuming624@qq.com)
+@author:XuMing(xuming624@qq.com)
 @description:
 """
 import os
@@ -19,7 +19,7 @@ from parrots.utils.file_reader import get_pinyin_list
 from parrots.utils.io_util import get_logger
 from parrots.utils.wav_util import get_frequency_features, read_wav_data
 
-default_logger = get_logger(__file__)
+logger = get_logger(__file__)
 
 pwd_path = os.path.abspath(os.path.dirname(__file__))
 get_abs_path = lambda path: os.path.normpath(os.path.join(pwd_path, path))
@@ -37,6 +37,7 @@ class SpeechRecognition(object):
         self.pinyin_path = get_abs_path(pinyin_path)
         self.model_path = get_abs_path(model_path)
         self.initialized = False
+        self._model, self.base_model = None, None
 
     def initialize(self):
         self._model, self.base_model = self.create_model()
@@ -47,7 +48,7 @@ class SpeechRecognition(object):
             except IOError:
                 pinyin_path = os.path.join(pwd_path, '..', self.pinyin_path)
                 self.pinyin_list = get_pinyin_list(pinyin_path)  # 获取拼音列表
-            default_logger.debug(
+            logger.debug(
                 "Loading pinyin dict cost %.3f seconds." % (time.time() - t1))
         if self.model_path:
             t2 = time.time()
@@ -58,9 +59,9 @@ class SpeechRecognition(object):
                 model_path = os.path.join(pwd_path, '..', self.model_path)
                 self._model.load_weights(model_path)
                 self.base_model.load_weights(model_path + '.base')
-            default_logger.debug(
+            logger.debug(
                 "Loading model cost %.3f seconds." % (time.time() - t2))
-            default_logger.debug("Speech recognition model has been built ok.")
+            logger.debug("Speech recognition model has been built ok.")
             self.graph = tf.get_default_graph()
             self.initialized = True
 
@@ -71,7 +72,7 @@ class SpeechRecognition(object):
     def create_model(self):
         """
         定义CNN/LSTM/CTC模型，使用函数式模型
-        输入层：200维的特征值序列，一条语音数据的最大长度设为1600（大约16s）
+        输入层：200维的特征值序列，一条语音数据的最大长度设为1600(大约16s）
         隐藏层：卷积池化层，卷积核大小为3x3，池化窗口大小为2
         隐藏层：全连接层
         输出层：全连接层，神经元数量为self.ms_output_size，使用softmax作为激活函数，
@@ -144,7 +145,7 @@ class SpeechRecognition(object):
         opt = Adam(lr=0.001, beta_1=0.9, beta_2=0.999, decay=0.0, epsilon=10e-8)
         model.compile(loss={'ctc': lambda y_true, y_pred: y_pred}, optimizer=opt)
 
-        # default_logger.debug('Create Model Successful, Compiles Model Successful. ')
+        # logger.debug('Create Model Successful, Compiles Model Successful. ')
         return model, model_data
 
     def ctc_lambda_func(self, args):

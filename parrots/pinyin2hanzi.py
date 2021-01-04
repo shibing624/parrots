@@ -10,7 +10,7 @@ import os
 from parrots import config
 from parrots.utils.io_util import get_logger
 
-default_logger = get_logger(__file__)
+logger = get_logger(__file__)
 
 pwd_path = os.path.abspath(os.path.dirname(__file__))
 get_abs_path = lambda path: os.path.normpath(os.path.join(pwd_path, path))
@@ -62,10 +62,10 @@ class Pinyin2Hanzi(object):
         return r
 
     def decode(self, list_syllable, yuzhi=0.0001):
-        '''
+        """
         实现拼音向文本的转换
         基于马尔可夫链
-        '''
+        """
         # assert self.dic_pinyin == null or self.model1 == null or self.model2 == null
         list_words = []
 
@@ -147,7 +147,7 @@ class Pinyin2Hanzi(object):
         :param file_path:
         :return: 读取后的字典
         """
-        txt_obj = open(file_path, 'r', encoding='UTF-8')  # 打开文件并读入
+        txt_obj = open(file_path, 'r', encoding='utf-8')  # 打开文件并读入
         txt_text = txt_obj.read()
         txt_obj.close()
         txt_lines = txt_text.split('\n')  # 文本分割
@@ -161,7 +161,7 @@ class Pinyin2Hanzi(object):
                 for word in txt_l[1]:
                     list_symbol.append(word)
             dic_symbol[pinyin] = list_symbol
-        default_logger.debug('Loaded: %s, size: %d' %(file_path, len(dic_symbol)))
+        logger.debug('Loaded: %s, size: %d' %(file_path, len(dic_symbol)))
         return dic_symbol
 
     def get_model_file(self, model_path):
@@ -170,7 +170,7 @@ class Pinyin2Hanzi(object):
         :param model_path:
         :return: 读取后的模型
         """
-        txt_obj = open(model_path, 'r', encoding='UTF-8')  # 打开文件并读入
+        txt_obj = open(model_path, 'r', encoding='utf-8')  # 打开文件并读入
         txt_text = txt_obj.read()
         txt_obj.close()
         txt_lines = txt_text.split('\n')  # 文本分割
@@ -182,11 +182,11 @@ class Pinyin2Hanzi(object):
                 if (len(txt_l) == 1):
                     continue
                 dic_model[txt_l[0]] = txt_l[1]
-        default_logger.debug('Loaded: %s, size: %d' % (model_path, len(dic_model)))
+        logger.debug('Loaded: %s, size: %d' % (model_path, len(dic_model)))
         return dic_model
 
     def get_pinyin(self, filename):
-        file_obj = open(filename, 'r', encoding='UTF-8')
+        file_obj = open(filename, 'r', encoding='utf-8')
         txt_all = file_obj.read()
         file_obj.close()
 
@@ -199,5 +199,5 @@ class Pinyin2Hanzi(object):
             list_pinyin = pinyin_split[0]
             if (list_pinyin not in dic) and int(pinyin_split[1]) > 1:
                 dic[list_pinyin] = pinyin_split[1]
-        default_logger.debug('Loaded: %s, size: %d' % (filename, len(dic)))
+        logger.debug('Loaded: %s, size: %d' % (filename, len(dic)))
         return dic
