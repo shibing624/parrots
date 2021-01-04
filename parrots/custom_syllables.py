@@ -3,29 +3,31 @@
 @author:XuMing(xuming624@qq.com)
 @description:
 """
-
 import json
+import os
 import sys
 from pathlib import Path
 
 from pydub import AudioSegment
 from pydub.silence import split_on_silence
 
-with open('mapping.json') as data_file:
+from parrots import config
+
+with open(config.pinyin2hanzi_mapping_path) as data_file:
     data = json.load(data_file)
 
 # keys = sorted(data.keys())
 if len(sys.argv) != 2:
     print("usage:")
-    print("      python process.py {key}")
-    print("to process ./recording/{key}.wav")
+    print("      python custom_syllables.py {key}")
+    print("to process ./data/syllables/{key}.wav; example: python3 custom_syllables.py a")
     sys.exit(1)
 
 key = sys.argv[1:][0]
 
 syllables = data[key]
 
-path = "./recording/" + key + ".wav"
+path = os.path.join(config.syllables_dir, "{}.wav".format(key))
 
 file = Path(path)
 if not file.is_file():
@@ -44,14 +46,17 @@ flag = False
 if len(syllables) * 5 != len(audio_chunks):
     flag = True
 
+out_dir = '../examples/pre/'
+if not os.path.exists(out_dir):
+    os.makedirs(out_dir)
 for i, chunk in enumerate(audio_chunks):
     syllable = syllables[i // 5]
     print(syllable)
     j = i % 5
     if j != 4:  # 1st, 2nd, 3rd, 4th tone
-        out_file = "./pre/" + syllable + str(j + 1) + ".wav"
+        out_file = out_dir + syllable + str(j + 1) + ".wav"
     else:  # neutrual tone
-        out_file = "./pre/" + syllable + ".wav"
+        out_file = out_dir + syllable + ".wav"
 
     # out_file = "./pre/"+ str(i)+".wav"
     print("exporting", out_file)
