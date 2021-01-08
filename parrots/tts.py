@@ -15,11 +15,12 @@ import pypinyin
 from pydub import AudioSegment
 from pypinyin import lazy_pinyin
 
+from parrots import config
 from parrots.num_util import num2chinese
 from parrots.utils.io_util import get_logger
-from parrots import config
 
 logger = get_logger(__file__)
+
 pwd_path = os.path.abspath(os.path.dirname(__file__))
 get_abs_path = lambda path: os.path.normpath(os.path.join(pwd_path, path))
 
@@ -123,5 +124,5 @@ class TextToSpeech(object):
             output_wav_path = 'out.wav'
 
         result.export(output_wav_path, format="wav")
-        logger.debug("Exported:" + output_wav_path)
+        logger.debug("Exported: %s" % output_wav_path)
         return result
