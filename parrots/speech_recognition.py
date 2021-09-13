@@ -12,7 +12,7 @@ from keras import backend as K
 from keras.layers import Dense, Dropout, Input, Reshape  # , Flatten
 from keras.layers import Lambda, Activation, Conv2D, MaxPooling2D  # , Merge
 from keras.models import Model
-from keras.optimizers import Adam
+from tensorflow.keras.optimizers import Adam
 
 from parrots import config
 from parrots.utils.file_reader import get_pinyin_list
