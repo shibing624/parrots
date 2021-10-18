@@ -12,7 +12,7 @@ from keras import backend as K
 from keras.layers import Dense, Dropout, Input, Reshape  # , Flatten
 from keras.layers import Lambda, Activation, Conv2D, MaxPooling2D  # , Merge
 from keras.models import Model
-from keras.optimizers import Adam
+from tensorflow.python.keras.optimizer_v2 import adam as adam_v2
 
 from parrots import config
 from parrots.utils.file_reader import get_pinyin_list
@@ -142,7 +142,7 @@ class SpeechRecognition(object):
         # model.summary()
 
         # clip norm seems to speeds up convergence
-        opt = Adam(lr=0.001, beta_1=0.9, beta_2=0.999, decay=0.0, epsilon=10e-8)
+        opt = Adam_v2.Adam(lr=0.001, beta_1=0.9, beta_2=0.999, decay=0.0, epsilon=10e-8)
         model.compile(loss={'ctc': lambda y_true, y_pred: y_pred}, optimizer=opt)
 
         # logger.debug('Create Model Successful, Compiles Model Successful. ')
