@@ -2,5 +2,6 @@ pypinyin
 jieba==0.42.1
 pydub==0.24.1
 #pyaudio==0.2.11
-tensorflow>=1.13.1
+tensorflow==1.15
 python_speech_features
+h5py<3.0.0

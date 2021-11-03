@@ -7,7 +7,7 @@
 from parrots.speech_recognition import SpeechRecognition
 from parrots.pinyin2hanzi import Pinyin2Hanzi
 
-ms = SpeechRecognition(pinyin_path='../parrots/data/pinyin_hanzi_dict.txt',
+ms = SpeechRecognition(pinyin_path='../parrots/data/pinyin2hanzi/pinyin_hanzi_dict.txt',
                        model_path='../parrots/data/speech_model/speech_recognition.model')
 r = ms.recognize_speech_from_file('../parrots/data/16k.wav')
 print('[提示] 语音识别结果：\n', r)
