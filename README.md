@@ -21,18 +21,13 @@ python3 setup.py install
 
 ## usage
 ### speech recognition
-input:
-```
-import parrots
+打开 "tests/speech_reco_test.py"，运行
 
-text = parrots.speech_recognition_from_file('./16k.wav')
-print(text)
 
-```
 
 output:
 ```
-北京图书馆
+北津科技过了(北京科技馆)
 ```
 
 ### tts
