@@ -10,6 +10,13 @@ pip3 install -r requirements.txt
 
 这里请注意，python37不支持pyaudio的pip安装，直接下载whl文件，然后pip安装，参考[这里](https://blog.csdn.net/COCO56/article/details/104190090)
 
+如果安装失败：
+
+sudo apt install python3-dev -y
+sudo apt-get install portaudio19-dev python-all-dev
+
+
+
 * pip3 install parrots
 * Or
 ```
