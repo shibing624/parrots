@@ -8,11 +8,12 @@ import time
 
 import numpy as np
 import tensorflow as tf
-from keras import backend as K
-from keras.layers import Dense, Dropout, Input, Reshape  # , Flatten
-from keras.layers import Lambda, Activation, Conv2D, MaxPooling2D  # , Merge
-from keras.models import Model
-from tensorflow.python.keras.optimizer_v2 import adam as adam_v2
+from tensorflow.keras import backend as K
+from tensorflow.keras.layers import Dense, Dropout, Input, Reshape  # , Flatten
+from tensorflow.keras.layers import Lambda, Activation, Conv2D, MaxPooling2D  # , Merge
+from tensorflow.keras.models import Model
+from tensorflow.python.keras.optimizer_v2 import adam as Adam_v2
+# from keras.optimizer_v2 import adam as Adam_v2
 
 from parrots import config
 from parrots.utils.file_reader import get_pinyin_list
