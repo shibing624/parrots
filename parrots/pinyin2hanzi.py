@@ -7,9 +7,7 @@
 基于马尔可夫模型的语言模型
 """
 import os
-from parrots.utils.io_util import get_logger
-
-logger = get_logger(__file__)
+from loguru import logger
 
 pwd_path = os.path.abspath(os.path.dirname(__file__))
 pinyin2hanzi_dir = os.path.join(pwd_path, 'data/pinyin2hanzi')
@@ -42,7 +40,7 @@ class Pinyin2Hanzi(object):
             str_split = list_syllable[i] + ' ' + list_syllable[i + 1]
             # print(str_split,str_tmp,r)
             # 如果这个拼音在汉语拼音状态转移字典里的话
-            if (str_split in self.pinyin):
+            if str_split in self.pinyin:
                 # 将第二个字的拼音加入
                 str_tmp.append(list_syllable[i + 1])
             else:
@@ -53,7 +51,6 @@ class Pinyin2Hanzi(object):
                     r += str_decode[0][0]
                 # 再重新从i+1开始作为第一个拼音
                 str_tmp = [list_syllable[i + 1]]
-        # print('最后：', str_tmp)
         str_decode = self.decode(str_tmp, 0.0000)
         if str_decode:
             r += str_decode[0][0]
@@ -64,16 +61,10 @@ class Pinyin2Hanzi(object):
         实现拼音向文本的转换
         基于马尔可夫链
         """
-        # assert self.dic_pinyin == null or self.model1 == null or self.model2 == null
         list_words = []
-
         num_pinyin = len(list_syllable)
-        # print('======')
-        # print('decode function: list_syllable\n',list_syllable)
-        # print(num_pinyin)
         # 开始语音解码
         for i in range(num_pinyin):
-            # print(i)
             ls = ''
             if list_syllable[i] in self.dict_pinyin:  # 如果这个拼音在汉语拼音字典里的话
                 # 获取拼音下属的字的列表，ls包含了该拼音对应的所有的字
@@ -81,7 +72,7 @@ class Pinyin2Hanzi(object):
             else:
                 break
 
-            if (i == 0):
+            if i == 0:
                 # 第一个字做初始处理
                 num_ls = len(ls)
                 for j in range(num_ls):

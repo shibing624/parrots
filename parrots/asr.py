@@ -5,6 +5,7 @@
 """
 import os
 import time
+from loguru import logger
 
 import numpy as np
 import tensorflow as tf
@@ -15,11 +16,7 @@ from tensorflow.keras.models import Model
 from tensorflow.python.keras.optimizer_v2 import adam as Adam_v2
 # from keras.optimizer_v2 import adam as Adam_v2
 
-from parrots.utils.file_reader import get_pinyin_list
-from parrots.utils.io_util import get_logger
-from parrots.utils.wav_util import get_frequency_features, read_wav_data
-
-logger = get_logger(__file__)
+from parrots.wav_util import get_frequency_features, read_wav_data, get_pinyin_list
 
 pwd_path = os.path.abspath(os.path.dirname(__file__))
 

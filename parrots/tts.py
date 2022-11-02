@@ -12,22 +12,19 @@ from pathlib import Path
 
 import pyaudio
 import pypinyin
+from loguru import logger
 from pydub import AudioSegment
 from pypinyin import lazy_pinyin
 
 from parrots.num_util import num2chinese
-from parrots.utils.io_util import get_logger
-
-logger = get_logger(__file__)
 
 pwd_path = os.path.abspath(os.path.dirname(__file__))
-get_abs_path = lambda path: os.path.normpath(os.path.join(pwd_path, path))
 default_syllables_dir = os.path.join(pwd_path, 'data/syllables')
 
 
 class TextToSpeech(object):
     def __init__(self, syllables_dir=default_syllables_dir):
-        self.syllables_dir = get_abs_path(syllables_dir)
+        self.syllables_dir = syllables_dir
         # TODO: 分数的读法 2.11 待修复，如何添加'.'
         self.punctuation = ['，', '。', '？', '！', '“', '”', '；', '：', '(', '）',
                             '.', ':', ';', ',', '?', '!', '\"', "\'", '(', ')']
@@ -57,9 +54,9 @@ class TextToSpeech(object):
             p.terminate()
             return
         except IOError as ioe:
-            logger.warn(ioe)
+            logger.warning(ioe)
         except Exception as e:
-            logger.warn(e)
+            logger.warning(e)
 
     def speak(self, text):
         syllables = lazy_pinyin(text, style=pypinyin.TONE3)
@@ -90,7 +87,6 @@ class TextToSpeech(object):
             delay += 0.355
         for t in threads:
             t.start()
-        t.join()
 
     def synthesize(self, input_text='', output_wav_path=''):
         """
@@ -124,5 +120,5 @@ class TextToSpeech(object):
             output_wav_path = 'out.wav'
 
         result.export(output_wav_path, format="wav")
-        logger.debug("Exported: %s" % output_wav_path)
+        logger.debug(f"Exported: {output_wav_path}")
         return result

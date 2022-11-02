@@ -5,8 +5,22 @@
 """
 import math
 import wave
-
 import numpy as np
+import difflib
+
+
+def edit_distance(str1, str2):
+    distance = 0
+    s = difflib.SequenceMatcher(None, str1, str2)
+    for tag, i1, i2, j1, j2 in s.get_opcodes():
+        # print('{:7} a[{}: {}] --> b[{}: {}] {} --> {}'.format(tag, i1, i2, j1, j2, str1[i1: i2], str2[j1: j2]))
+        if tag == 'replace':
+            distance += max(i2 - i1, j2 - j1)
+        elif tag == 'insert':
+            distance += (j2 - j1)
+        elif tag == 'delete':
+            distance += (i2 - i1)
+    return distance
 
 
 def read_wav_data(filename):
@@ -92,6 +106,7 @@ w = 0.54 - 0.46 * np.cos(2 * np.pi * (x) / (400 - 1))  # 汉明窗
 
 
 def get_frequency_features(wavsignal, fs):
+    from scipy.fftpack import fft
     # wav波形 加时间窗以及时移10ms
     time_window = 25  # 单位ms
     window_length = fs / 1000 * time_window  # 计算窗长度的公式，目前全部为400固定值
@@ -159,7 +174,7 @@ def get_wav_list(filename):
     dic_filelist = {}  # 初始化字典
     list_wavmark = []  # 初始化wav列表
     for i in txt_lines:
-        if (i != ''):
+        if i != '':
             txt_l = i.split(' ')
             dic_filelist[txt_l[0]] = txt_l[1]
             list_wavmark.append(txt_l[0])
@@ -178,9 +193,26 @@ def get_wav_symbol(filename):
     dic_symbol_list = {}  # 初始化字典
     list_symbolmark = []  # 初始化symbol列表
     for i in txt_lines:
-        if (i != ''):
+        if i != '':
             txt_l = i.split(' ')
             dic_symbol_list[txt_l[0]] = txt_l[1:]
             list_symbolmark.append(txt_l[0])
     txt_obj.close()
     return dic_symbol_list, list_symbolmark
+
+
+def get_pinyin_list(dict_path=''):
+    """
+    加载拼音符号列表，用于标记符号
+    :param dict_path: 拼音符号列表
+    :return:
+    """
+    list_symbol = []  # 符号列表
+    pinyin_idx = 0
+    with open(dict_path, mode='r', encoding='UTF-8') as f:
+        for line in f:
+            line = line.strip('\n')
+            parts = line.split('\t')
+            list_symbol.append(parts[pinyin_idx])
+    list_symbol.append('_')
+    return list_symbol
