@@ -6,11 +6,7 @@
 import math
 import wave
 
-import matplotlib.pyplot as plt
 import numpy as np
-from python_speech_features import delta
-from python_speech_features import mfcc
-from scipy.fftpack import fft
 
 
 def read_wav_data(filename):
@@ -29,17 +25,8 @@ def read_wav_data(filename):
     return wave_data, framerate
 
 
-def GetMfccFeature(wavsignal, fs):
-    # 获取输入特征
-    feat_mfcc = mfcc(wavsignal[0], fs)
-    feat_mfcc_d = delta(feat_mfcc, 2)
-    feat_mfcc_dd = delta(feat_mfcc_d, 2)
-    # 返回值分别是mfcc特征向量的矩阵及其一阶差分和二阶差分矩阵
-    wav_feature = np.column_stack((feat_mfcc, feat_mfcc_d, feat_mfcc_dd))
-    return wav_feature
-
-
 def GetFrequencyFeature(wavsignal, fs):
+    from scipy.fftpack import fft
     # wav波形 加时间窗以及时移10ms
     time_window = 25  # 单位ms
     data_input = []
@@ -70,6 +57,7 @@ def GetFrequencyFeature(wavsignal, fs):
 
 
 def GetFrequencyFeature2(wavsignal, fs):
+    from scipy.fftpack import fft
     # wav波形 加时间窗以及时移10ms
     time_window = 25  # 单位ms
     window_length = fs / 1000 * time_window  # 计算窗长度的公式，目前全部为400固定值
@@ -158,16 +146,6 @@ def wav_scale3(energy):
     # if i == 1:
     #	#print('wavsignal[0]:\n {:.4f}'.format(energy[1]),energy[1] is int)
     return energy
-
-
-def wav_show(wave_data, fs):  # 显示出来声音波形
-    time = np.arange(0, len(wave_data)) * (1.0 / fs)  # 计算声音的播放时间，单位为秒
-    # 画声音波形
-    # plt.subplot(211)
-    plt.plot(time, wave_data)
-    # plt.subplot(212)
-    # plt.plot(time, wave_data[1], c = "g")
-    plt.show()
 
 
 def get_wav_list(filename):

@@ -3,10 +3,9 @@
 @author:XuMing(xuming624@qq.com)
 @description: 
 """
-from parrots.tts import TextToSpeech
+from parrots import TextToSpeech
 
-if __name__ == '__main__':
+def test1():
     tts = TextToSpeech(syllables_dir='../parrots/data/syllables')
     print('中文语言合成')
-    while True:
-        tts.synthesize(input_text=input('输入中文：'), output_wav_path='./out.wav')
+    tts.synthesize(input_text=input('输入中文：'), output_wav_path='./out.wav')

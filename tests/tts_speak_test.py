@@ -5,7 +5,7 @@
 """
 from parrots.tts import TextToSpeech
 
-if __name__ == '__main__':
+
+def test1():
     tts = TextToSpeech(syllables_dir='../parrots/data/syllables')
-    while True:
-        tts.speak(input('输入中文：\n'))
+    tts.speak('你好，我是小明，我来自中国。')

@@ -55,6 +55,10 @@ output:
 ### 语音库
 从SourceForge下载语音库[`syllables.zip`](https://sourceforge.net/projects/hantts/files/?source=navbar)，并解压到`parrots/data`目录下
 
+```shell
+wget https://sourceforge.net/projects/hantts/files/syllables.zip --no-check-certificate
+```
+
 ### 录制新的语音库
 - 按阴平、阳平、上声、去声、轻声的顺序录下 mapping.json 里每一个音节的五个声调
 - 按开头字母(letter)分组, 将文件存在 ./recording/{letter}.wav下
