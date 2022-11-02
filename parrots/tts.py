@@ -15,7 +15,6 @@ import pypinyin
 from pydub import AudioSegment
 from pypinyin import lazy_pinyin
 
-from parrots import config
 from parrots.num_util import num2chinese
 from parrots.utils.io_util import get_logger
 
@@ -23,10 +22,11 @@ logger = get_logger(__file__)
 
 pwd_path = os.path.abspath(os.path.dirname(__file__))
 get_abs_path = lambda path: os.path.normpath(os.path.join(pwd_path, path))
+default_syllables_dir = os.path.join(pwd_path, 'data/syllables')
 
 
 class TextToSpeech(object):
-    def __init__(self, syllables_dir=config.syllables_dir):
+    def __init__(self, syllables_dir=default_syllables_dir):
         self.syllables_dir = get_abs_path(syllables_dir)
         # TODO: 分数的读法 2.11 待修复，如何添加'.'
         self.punctuation = ['，', '。', '？', '！', '“', '”', '；', '：', '(', '）',

@@ -4,7 +4,7 @@
 @description: 
 """
 
-from parrots.speech_recognition import SpeechRecognition
+from parrots import SpeechRecognition
 from parrots.pinyin2hanzi import Pinyin2Hanzi
 
 ms = SpeechRecognition(pinyin_path='../parrots/data/pinyin_hanzi_dict.txt',

@@ -4,11 +4,12 @@
 @description: 
 """
 
-import parrots
+from parrots import TextToSpeech
 
 if __name__ == '__main__':
+    m = TextToSpeech()
     # say text
-    parrots.speak('北京图书馆')
+    m.speak('北京图书馆')
 
     # generate wav file to path
-    parrots.synthesize('北京图书馆', output_wav_path='./out.wav')
+    m.synthesize('北京图书馆', output_wav_path='./out.wav')

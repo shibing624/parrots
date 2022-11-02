@@ -1,22 +1,16 @@
 # -*- coding: utf-8 -*-
-# Author: XuMing(xuming624@qq.com)
-# Brief: 
-from __future__ import print_function
+"""
+@author:XuMing(xuming624@qq.com)
+@description:
+"""
 from setuptools import setup, find_packages
-from parrots import __version__
 
 with open('README.md', 'r', encoding='utf-8') as f:
     readme = f.read()
 
-with open('LICENSE', 'r', encoding='utf-8') as f:
-    license = f.read()
-
-with open('requirements.txt', 'r', encoding='utf-8') as f:
-    reqs = f.read()
-
 setup(
     name='parrots',
-    version=__version__,
+    version='0.1.6',
     description='Chinese Text To Speech and Speech Recognition',
     long_description=readme,
     long_description_content_type='text/markdown',
@@ -31,18 +25,15 @@ setup(
         'Natural Language :: Chinese (Traditional)',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.5',
-        'Programming Language :: Python :: 3.6',
-        'Programming Language :: Python :: 3.7',
-        'Programming Language :: Python :: 3.8',
         'Topic :: Software Development :: Libraries :: Python Modules',
         'Topic :: Scientific/Engineering :: Artificial Intelligence',
     ],
     platforms=["Windows", "Linux", "Solaris", "Mac OS-X", "Unix"],
     keywords='TTS,ASR,text to speech,speech',
-    install_requires=reqs.strip().split('\n'),
+    install_requires=['pypinyin',
+                      'jieba'],
     packages=find_packages(exclude=['tests']),
     package_dir={'parrots': 'parrots'},
     package_data={
-        'parrots': ['*.*', 'LICENSE', 'README.*', 'data/*', 'utils/*', 'data/pinyin2hanzi/*', 'data/speech_model/*']}
+        'parrots': ['*.*', 'README.*', 'data/*', 'utils/*', 'data/pinyin2hanzi/*', 'data/speech_model/*']}
 )

@@ -7,14 +7,7 @@ import os
 import time
 
 import numpy as np
-import tensorflow as tf
-from keras import backend as K
-from keras.layers import Dense, Dropout, Input, Reshape  # , Flatten
-from keras.layers import Lambda, Activation, Conv2D, MaxPooling2D  # , Merge
-from keras.models import Model
-from keras.optimizers import Adam
 
-from parrots import config
 from parrots.utils.file_reader import get_pinyin_list
 from parrots.utils.io_util import get_logger
 from parrots.utils.wav_util import get_frequency_features, read_wav_data
@@ -22,20 +15,22 @@ from parrots.utils.wav_util import get_frequency_features, read_wav_data
 logger = get_logger(__file__)
 
 pwd_path = os.path.abspath(os.path.dirname(__file__))
-get_abs_path = lambda path: os.path.normpath(os.path.join(pwd_path, path))
+
+pinyin_hanzi_dict_path = os.path.join(pwd_path, 'data/pinyin2hanzi/pinyin_hanzi_dict.txt')
+speech_recognition_model_path = os.path.join(pwd_path, 'data/speech_model/speech_recognition.model')
 
 
 class SpeechRecognition(object):
-    def __init__(self, pinyin_path=config.pinyin_hanzi_dict_path,
-                 model_path=config.speech_recognition_model_path,
+    def __init__(self, pinyin_path=pinyin_hanzi_dict_path,
+                 model_path=speech_recognition_model_path,
                  ms_output_size=1422):
         # 默认输出的拼音的表示大小是1422，即1421个拼音+1个空白块
         self.ms_output_size = ms_output_size  # 神经网络最终输出的每一个字符向量维度的大小
         self.label_max_string_length = 64
         self.AUDIO_LENGTH = 1600
         self.AUDIO_FEATURE_LENGTH = 200
-        self.pinyin_path = get_abs_path(pinyin_path)
-        self.model_path = get_abs_path(model_path)
+        self.pinyin_path = pinyin_path
+        self.model_path = model_path
         self.initialized = False
         self._model, self.base_model = None, None
 

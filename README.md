@@ -2,7 +2,7 @@
 parrots, Automatic Speech Recognition(ASR), Text-To-Speech(TTS) engine.
 
 
-## install
+## Install
 ```
 brew install portaudio
 pip3 install -r requirements.txt
@@ -16,9 +16,11 @@ cd parrots
 python3 setup.py install
 ```
 
+## Demo
+Official Demo: https://www.mulanai.com/product/asr/
 
-## usage
-### speech recognition
+## Usage
+### ASR
 input:
 ```
 import parrots
@@ -33,7 +35,7 @@ output:
 北京图书馆
 ```
 
-### tts
+### TTS
 input:
 ```
 import parrots
@@ -48,7 +50,7 @@ output:
 北京图书馆 语音文件路径
 ```
 
-## update
+## Dataset
 
 ### 语音库
 从SourceForge下载语音库[`syllables.zip`](https://sourceforge.net/projects/hantts/files/?source=navbar)，并解压到`parrots/data`目录下

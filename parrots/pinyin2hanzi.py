@@ -7,18 +7,16 @@
 基于马尔可夫模型的语言模型
 """
 import os
-from parrots import config
 from parrots.utils.io_util import get_logger
 
 logger = get_logger(__file__)
 
 pwd_path = os.path.abspath(os.path.dirname(__file__))
-get_abs_path = lambda path: os.path.normpath(os.path.join(pwd_path, path))
+pinyin2hanzi_dir = os.path.join(pwd_path, 'data/pinyin2hanzi')
 
 
 class Pinyin2Hanzi(object):
-    def __init__(self, model_dir=config.pinyin2hanzi_dir):
-        model_dir = get_abs_path(model_dir)
+    def __init__(self, model_dir=pinyin2hanzi_dir):
         self.dict_pinyin = self.get_symbol_dict(os.path.join(model_dir, 'pinyin_hanzi_dict.txt'))
         self.model1 = self.get_model_file(os.path.join(model_dir, 'char_idx.txt'))
         self.model2 = self.get_model_file(os.path.join(model_dir, 'word_idx.txt'))
@@ -161,7 +159,7 @@ class Pinyin2Hanzi(object):
                 for word in txt_l[1]:
                     list_symbol.append(word)
             dic_symbol[pinyin] = list_symbol
-        logger.debug('Loaded: %s, size: %d' %(file_path, len(dic_symbol)))
+        logger.debug('Loaded: %s, size: %d' % (file_path, len(dic_symbol)))
         return dic_symbol
 
     def get_model_file(self, model_path):
