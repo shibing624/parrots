@@ -4,6 +4,9 @@
 @description: 
 """
 import os
+import sys
+
+sys.path.append('..')
 from parrots import SpeechRecognition, Pinyin2Hanzi
 
 pwd_path = os.path.abspath(os.path.dirname(__file__))
