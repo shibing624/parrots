@@ -10,7 +10,6 @@ import time
 import wave
 from pathlib import Path
 
-import pyaudio
 import pypinyin
 from loguru import logger
 from pydub import AudioSegment
@@ -25,7 +24,7 @@ default_syllables_dir = os.path.join(pwd_path, 'data/syllables')
 class TextToSpeech(object):
     def __init__(self, syllables_dir=default_syllables_dir):
         self.syllables_dir = syllables_dir
-        # TODO: 分数的读法 2.11 待修复，如何添加'.'
+        # TODO: 分数的读法待修复，如何添加'.'
         self.punctuation = ['，', '。', '？', '！', '“', '”', '；', '：', '(', '）',
                             '.', ':', ';', ',', '?', '!', '\"', "\'", '(', ')']
 
@@ -33,6 +32,10 @@ class TextToSpeech(object):
         self.syllables_dir = new_dir
 
     def _play_audio(self, path, delay, chunk=1024):
+        try:
+            import pyaudio
+        except ImportError:
+            raise ImportError("pyaudio is not installed, please install it first.")
         try:
             time.sleep(delay)
             wf = wave.open(path, 'rb')

@@ -13,7 +13,7 @@ pwd_path = os.path.abspath(os.path.dirname(__file__))
 
 if __name__ == '__main__':
     m = SpeechRecognition()
-    r = m.recognize_speech_from_file(os.path.join(pwd_path, '16k.wav'))
+    r = m.recognize_speech_from_file(os.path.join(pwd_path, 'tushuguan.wav'))
     print('[提示] 语音识别结果：', r)
 
     n = Pinyin2Hanzi()

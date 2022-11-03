@@ -3,14 +3,18 @@
 @author:XuMing(xuming624@qq.com)
 @description: 
 """
+import os
+import sys
 
-from parrots import SpeechRecognition
-from parrots.pinyin2hanzi import Pinyin2Hanzi
+sys.path.append('..')
+from parrots import SpeechRecognition, Pinyin2Hanzi
+
+pwd_path = os.path.abspath(os.path.dirname(__file__))
 
 
 def test1():
     m = SpeechRecognition()
-    r = m.recognize_speech_from_file('../parrots/data/a.wav')
+    r = m.recognize_speech_from_file(os.path.join(pwd_path, '../examples/tushuguan.wav'))
     print('[提示] 语音识别结果：\n', r)
 
     p2h = Pinyin2Hanzi()

@@ -8,4 +8,4 @@ from parrots.pinyin2hanzi import Pinyin2Hanzi
 from parrots.asr import SpeechRecognition
 from parrots.tts import TextToSpeech
 
-__version__ = '0.1.6'
+__version__ = '0.1.7'

@@ -21,12 +21,24 @@ Official Demo: https://www.mulanai.com/product/asr/
 
 ## Usage
 ### ASR
-input:
-```
-import parrots
+example: [examples/demo_asr.py](examples/demo_asr.py)
+```python
+import os
+import sys
 
-text = parrots.speech_recognition_from_file('./16k.wav')
-print(text)
+sys.path.append('..')
+from parrots import SpeechRecognition, Pinyin2Hanzi
+
+pwd_path = os.path.abspath(os.path.dirname(__file__))
+
+if __name__ == '__main__':
+    m = SpeechRecognition()
+    r = m.recognize_speech_from_file(os.path.join(pwd_path, 'tushuguan.wav'))
+    print('[提示] 语音识别结果：', r)
+
+    n = Pinyin2Hanzi()
+    text = n.pinyin_2_hanzi(r)
+    print('[提示] 语音转文字结果：', text)
 
 ```
 
@@ -36,18 +48,25 @@ output:
 ```
 
 ### TTS
-input:
-```
-import parrots
+example: [examples/demo_tts.py](examples/demo_tts.py)
+```python
+import sys
 
-audio_file_path = parrots.synthesize('北京图书馆')
-print(audio_file_path)
+sys.path.append('..')
+from parrots import TextToSpeech
 
+if __name__ == '__main__':
+    m = TextToSpeech()
+    # say text
+    m.speak('北京图书馆')
+
+    # generate wav file to path
+    m.synthesize('北京图书馆', output_wav_path='./out.wav')
 ```
 
 output:
 ```
-北京图书馆 语音文件路径
+北京图书馆
 ```
 
 ## Dataset
