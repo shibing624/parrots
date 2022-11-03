@@ -13,8 +13,7 @@ from tensorflow.keras import backend as K
 from tensorflow.keras.layers import Dense, Dropout, Input, Reshape  # , Flatten
 from tensorflow.keras.layers import Lambda, Activation, Conv2D, MaxPooling2D  # , Merge
 from tensorflow.keras.models import Model
-from tensorflow.python.keras.optimizer_v2 import adam as Adam_v2
-# from keras.optimizer_v2 import adam as Adam_v2
+from tensorflow.keras.optimizers import Adam
 
 from parrots.wav_util import get_frequency_features, read_wav_data, get_pinyin_list
 
@@ -141,7 +140,7 @@ class SpeechRecognition(object):
         # model.summary()
 
         # clip norm seems to speeds up convergence
-        opt = Adam_v2(lr=0.001, beta_1=0.9, beta_2=0.999, decay=0.0, epsilon=10e-8)
+        opt = Adam(lr=0.001, beta_1=0.9, beta_2=0.999, decay=0.0, epsilon=10e-8)
         model.compile(loss={'ctc': lambda y_true, y_pred: y_pred}, optimizer=opt)
 
         # logger.debug('Create Model Successful, Compiles Model Successful. ')
