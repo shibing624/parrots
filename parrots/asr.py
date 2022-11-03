@@ -60,7 +60,6 @@ class SpeechRecognition(object):
             logger.debug(
                 "Loading model cost %.3f seconds." % (time.time() - t2))
             logger.debug("Speech recognition model has been built ok.")
-            self.graph = tf.get_default_graph()
             self.initialized = True
 
     def check_initialized(self):
@@ -166,8 +165,7 @@ class SpeechRecognition(object):
 
         for i in range(batch_size):
             x_in[i, 0:len(data_input)] = data_input
-        with self.graph.as_default():
-            base_pred = self.base_model.predict(x=x_in)
+        base_pred = self.base_model.predict(x=x_in)
         base_pred = base_pred[:, :, :]
         decoder = K.ctc_decode(base_pred, in_len, greedy=True, beam_width=100, top_paths=1)
         result = K.get_value(decoder[0][0])[0]
