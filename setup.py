@@ -35,5 +35,5 @@ setup(
     packages=find_packages(exclude=['tests']),
     package_dir={'parrots': 'parrots'},
     package_data={
-        'parrots': ['*.*', 'README.*', 'data/*', 'utils/*', 'data/pinyin2hanzi/*', 'data/speech_model/*']}
+        'parrots': ['*.*', 'data/*', 'data/pinyin2hanzi/*', 'data/speech_model/*']}
 )

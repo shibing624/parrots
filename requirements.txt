@@ -1,6 +1,6 @@
 pypinyin
 jieba
-#pydub==0.24.1
+loguru
+pydub
 #pyaudio==0.2.11
 #tensorflow>=1.13.1
-#python_speech_features

@@ -8,10 +8,9 @@ import time
 from loguru import logger
 
 import numpy as np
-import tensorflow as tf
 from tensorflow.keras import backend as K
-from tensorflow.keras.layers import Dense, Dropout, Input, Reshape  # , Flatten
-from tensorflow.keras.layers import Lambda, Activation, Conv2D, MaxPooling2D  # , Merge
+from tensorflow.keras.layers import Dense, Dropout, Input, Reshape
+from tensorflow.keras.layers import Lambda, Activation, Conv2D, MaxPooling2D
 from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
 
@@ -141,8 +140,6 @@ class SpeechRecognition(object):
         # clip norm seems to speeds up convergence
         opt = Adam(lr=0.001, beta_1=0.9, beta_2=0.999, decay=0.0, epsilon=10e-8)
         model.compile(loss={'ctc': lambda y_true, y_pred: y_pred}, optimizer=opt)
-
-        # logger.debug('Create Model Successful, Compiles Model Successful. ')
         return model, model_data
 
     def ctc_lambda_func(self, args):
