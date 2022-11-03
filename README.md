@@ -81,6 +81,6 @@ wget https://sourceforge.net/projects/hantts/files/syllables.zip --no-check-cert
 ### 录制新的语音库
 - 按阴平、阳平、上声、去声、轻声的顺序录下 mapping.json 里每一个音节的五个声调
 - 按开头字母(letter)分组, 将文件存在 ./recording/{letter}.wav下
-- 运行 `python process.py {letter}` 将{letter}.wav 完整的录音分成独立的拼音
+- 运行 `python parrots.custom_syllables.py {letter}` 将{letter}.wav 完整的录音分成独立的拼音
 - 检查核对`./pre`文件夹中的拼音.wav后导入文件夹`./syllables`
 

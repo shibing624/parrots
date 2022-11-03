@@ -19,3 +19,4 @@ if __name__ == '__main__':
     n = Pinyin2Hanzi()
     text = n.pinyin_2_hanzi(r)
     print('[提示] 语音转文字结果：', text)
+

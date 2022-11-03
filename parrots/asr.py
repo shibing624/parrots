@@ -4,7 +4,6 @@
 @description:
 """
 import os
-import time
 from loguru import logger
 
 import numpy as np
@@ -31,39 +30,16 @@ class SpeechRecognition(object):
         self.label_max_string_length = 64
         self.AUDIO_LENGTH = 1600
         self.AUDIO_FEATURE_LENGTH = 200
-        self.pinyin_path = pinyin_path
-        self.model_path = model_path
         self.initialized = False
-        self._model, self.base_model = None, None
-
-    def initialize(self):
         self._model, self.base_model = self.create_model()
-        if self.pinyin_path:
-            t1 = time.time()
-            try:
-                self.pinyin_list = get_pinyin_list(self.pinyin_path)  # 获取拼音列表
-            except IOError:
-                pinyin_path = os.path.join(pwd_path, '..', self.pinyin_path)
-                self.pinyin_list = get_pinyin_list(pinyin_path)  # 获取拼音列表
+        if pinyin_path:
+            self.pinyin_list = get_pinyin_list(pinyin_path)  # 获取拼音列表
             logger.debug(
-                "Loading pinyin dict cost %.3f seconds." % (time.time() - t1))
-        if self.model_path:
-            t2 = time.time()
-            try:
-                self._model.load_weights(self.model_path)
-                self.base_model.load_weights(self.model_path + '.base')
-            except IOError:
-                model_path = os.path.join(pwd_path, '..', self.model_path)
-                self._model.load_weights(model_path)
-                self.base_model.load_weights(model_path + '.base')
-            logger.debug(
-                "Loading model cost %.3f seconds." % (time.time() - t2))
-            logger.debug("Speech recognition model has been built ok.")
-            self.initialized = True
-
-    def check_initialized(self):
-        if not self.initialized:
-            self.initialize()
+                "Pinyin dict Loaded. Pinyin dict length: {}".format(len(self.pinyin_list)))
+        if model_path:
+            self._model.load_weights(model_path)
+            self.base_model.load_weights(model_path + '.base')
+            logger.debug("Speech recognition model has been loaded.")
 
     def create_model(self):
         """
@@ -175,7 +151,6 @@ class SpeechRecognition(object):
         :param fs:
         :return:
         """
-        self.check_initialized()
         result = []
         data_input = get_frequency_features(wavsignal, fs)
         input_length = len(data_input)
@@ -202,5 +177,4 @@ class SpeechRecognition(object):
         model
         :return: keras model
         """
-        self.check_initialized()
         return self._model
