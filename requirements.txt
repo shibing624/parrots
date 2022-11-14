@@ -3,4 +3,5 @@ jieba
 loguru
 pydub
 #pyaudio==0.2.11
-#tensorflow>=1.13.1
+#tensorflow>=2.10.0
+#keras==2.10.0
