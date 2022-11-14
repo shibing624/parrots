@@ -5,10 +5,10 @@ parrots, Automatic Speech Recognition(ASR), Text-To-Speech(TTS) engine.
 ## Install
 ```
 brew install portaudio
-pip3 install -r requirements.txt
+pip install -r requirements.txt
 ```
 
-* pip3 install parrots
+* pip install parrots
 * Or
 ```
 git clone https://github.com/shibing624/parrots.git
