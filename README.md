@@ -126,11 +126,11 @@ wget https://sourceforge.net/projects/hantts/files/syllables.zip --no-check-cert
 如果你在研究中使用了parrots，请按如下格式引用：
 
 ```latex
-@software{parrots,
-  author = {Xu Ming},
-  title = {parrots: ASR and TTS Tool},
-  year = {2022},
-  url = {https://github.com/shibing624/parrots},
+@misc{parrots,
+  title={parrots: ASR and TTS Tool},
+  author={Xu Ming},
+  year={2022},
+  howpublished={\url{https://github.com/shibing624/parrots}},
 }
 ```
 
