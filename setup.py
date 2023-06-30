@@ -10,7 +10,7 @@ with open('README.md', 'r', encoding='utf-8') as f:
 
 setup(
     name='parrots',
-    version='0.1.7',
+    version='0.1.8',
     description='Chinese Text To Speech and Speech Recognition',
     long_description=readme,
     long_description_content_type='text/markdown',

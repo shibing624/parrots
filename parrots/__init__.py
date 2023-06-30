@@ -3,9 +3,8 @@
 @author:XuMing(xuming624@qq.com)
 @description: 
 """
+__version__ = '0.1.8'
 
-from parrots.pinyin2hanzi import Pinyin2Hanzi
 from parrots.asr import SpeechRecognition
+from parrots.pinyin2hanzi import Pinyin2Hanzi
 from parrots.tts import TextToSpeech
-
-__version__ = '0.1.7'

@@ -1,5 +1,14 @@
-![alt text](docs/parrots_icon.jpg)
+[**🇨🇳中文**](https://github.com/shibing624/parrots/blob/master/README.md) | [**🌐English**](https://github.com/shibing624/pycorrector/blob/parrots/README_EN.md) | [**📖文档/Docs**](https://github.com/shibing624/parrots/wiki) | [**🤖模型/Models**](https://huggingface.co/shibing624) 
 
+<div align="center">
+  <a href="https://github.com/shibing624/parrots">
+    <img src="https://github.com/shibing624/parrots/blob/master/docs/parrots_icon.png" alt="Logo" height="156">
+  </a>
+</div>
+
+-----------------
+
+# Parrots: Chinese ASR and TTS toolkit
 [![PyPI version](https://badge.fury.io/py/parrots.svg)](https://badge.fury.io/py/parrots)
 [![Downloads](https://pepy.tech/badge/parrots)](https://pepy.tech/project/parrots)
 [![Contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg)](CONTRIBUTING.md)
@@ -9,8 +18,8 @@
 [![GitHub issues](https://img.shields.io/github/issues/shibing624/parrots.svg)](https://github.com/shibing624/parrots/issues)
 [![Wechat Group](http://vlog.sfyc.ltd/wechat_everyday/wxgroup_logo.png?imageView2/0/w/60/h/20)](#Contact)
 
-# Parrots
-Parrots, Automatic Speech Recognition(**ASR**), Text-To-Speech(**TTS**) engine.
+## Introduction
+Parrots, Chinese Automatic Speech Recognition(**ASR**), Text-To-Speech(**TTS**) engine.
 
 **parrots**实现了中文语音识别和语音合成模型，开箱即用。
 
@@ -26,19 +35,17 @@ Parrots, Automatic Speech Recognition(**ASR**), Text-To-Speech(**TTS**) engine.
 - [Reference](#reference)
 
 
-# Feature
+## Feature
 1. ASR：基于 Tensorflow2 实现的中文语音识别（ASR）模型
 2. TTS：基于中文语音库的语音合成（TTS）模型
 
-# Install
+## Install
+```shell
+brew install portaudio # for mac
+pip install parrots
 ```
-brew install portaudio
-pip install -r requirements.txt
-```
-
-* pip install parrots
-* Or
-```
+Or
+```shell
 git clone https://github.com/shibing624/parrots.git
 cd parrots
 python3 setup.py install
@@ -47,8 +54,8 @@ python3 setup.py install
 ## Demo
 Official Demo: https://www.mulanai.com/product/asr/
 
-# Usage
-## ASR
+## Usage
+### ASR
 example: [examples/demo_asr.py](examples/demo_asr.py)
 ```python
 import os
@@ -75,7 +82,7 @@ output:
 北京图书馆
 ```
 
-## TTS(Speech Synthesis)
+### TTS(Speech Synthesis)
 example: [examples/demo_tts.py](examples/demo_tts.py)
 ```python
 import sys
@@ -97,7 +104,7 @@ output:
 北京图书馆
 ```
 
-# Dataset
+## Dataset
 
 ## 语音库
 从SourceForge下载语音库[`syllables.zip`](https://sourceforge.net/projects/hantts/files/?source=navbar)，并解压到`parrots/data`目录下
@@ -112,7 +119,7 @@ wget https://sourceforge.net/projects/hantts/files/syllables.zip --no-check-cert
 - 运行 `python parrots.custom_syllables.py {letter}` 将{letter}.wav 完整的录音分成独立的拼音
 - 检查核对`./pre`文件夹中的拼音.wav后导入文件夹`./syllables`
 
-# Contact
+## Contact
 
 - Issue(建议)：[![GitHub issues](https://img.shields.io/github/issues/shibing624/parrots.svg)](https://github.com/shibing624/parrots/issues)
 - 邮件我：xuming: xuming624@qq.com
@@ -121,26 +128,26 @@ wget https://sourceforge.net/projects/hantts/files/syllables.zip --no-check-cert
 <img src="docs/wechat.jpeg" width="200" />
 
 
-# Citation
+## Citation
 
 如果你在研究中使用了parrots，请按如下格式引用：
 
 ```latex
 @misc{parrots,
   title={parrots: ASR and TTS Tool},
-  author={Xu Ming},
+  author={Ming Xu},
   year={2022},
   howpublished={\url{https://github.com/shibing624/parrots}},
 }
 ```
 
-# License
+## License
 
 
 授权协议为 [The Apache License 2.0](/LICENSE)，可免费用做商业用途。请在产品说明中附加parrots的链接和授权协议。
 
 
-# Contribute
+## Contribute
 项目代码还很粗糙，如果大家对代码有所改进，欢迎提交回本项目，在提交之前，注意以下两点：
 
  - 在`tests`添加相应的单元测试
@@ -149,7 +156,7 @@ wget https://sourceforge.net/projects/hantts/files/syllables.zip --no-check-cert
 之后即可提交PR。
 
 
-# Reference
+## Reference
 #### ASR
 - [EAT: Enhanced ASR-TTS for Self-supervised Speech Recognition](https://arxiv.org/abs/2104.07474)
 - [PaddlePaddle/PaddleSpeech](https://github.com/PaddlePaddle/PaddleSpeech)
