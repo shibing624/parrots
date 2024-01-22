@@ -65,6 +65,12 @@ class SpeechRecognition:
             torch_dtype='auto',
             device=self.device,
         )
+        self.pipe.model.config.forced_decoder_ids = (
+            self.pipe.tokenizer.get_decoder_prompt_ids(
+                language="zh",
+                task="transcribe"
+            )
+        )
         logger.debug(f"Speech recognition model: {model_name_or_path} has been loaded.")
 
     def recognize_speech(self, inputs: Union[np.ndarray, bytes, str]):
