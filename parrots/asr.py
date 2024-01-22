@@ -48,23 +48,16 @@ class SpeechRecognition:
                 self.device_map = {"": "cpu"}
         logger.debug(f"Device: {self.device}")
 
-        self.model = AutoModelForSpeechSeq2Seq.from_pretrained(
-            model_name_or_path,
-            torch_dtype=torch_dtype,
-            use_flash_attention_2=use_flash_attention_2,
-        )
-        self.model.to(self.device)
-        self.processor = AutoProcessor.from_pretrained(model_name_or_path)
+        # self.model = AutoModelForSpeechSeq2Seq.from_pretrained(
+        #     model_name_or_path,
+        #     torch_dtype=torch_dtype,
+        #     use_flash_attention_2=use_flash_attention_2,
+        # )
+        # self.model.to(self.device)
+        # self.processor = AutoProcessor.from_pretrained(model_name_or_path)
         self.pipe = pipeline(
             "automatic-speech-recognition",
-            model=self.model,
-            tokenizer=self.processor.tokenizer,
-            feature_extractor=self.processor.feature_extractor,
-            max_new_tokens=max_new_tokens,
-            chunk_length_s=chunk_length_s,
-            batch_size=batch_size,
-            torch_dtype=torch_dtype,
-            device=f"{self.device}",
+            model=model_name_or_path,
             **kwargs
         )
         self.pipe.model.config.forced_decoder_ids = (
