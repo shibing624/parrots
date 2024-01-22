@@ -51,10 +51,10 @@ class SpeechRecognition:
         self.model = AutoModelForSpeechSeq2Seq.from_pretrained(
             model_name_or_path,
             torch_dtype=torch_dtype,
-            device_map=self.device_map,
             low_cpu_mem_usage=True,
             use_flash_attention_2=use_flash_attention_2,
         )
+        self.model.to(self.device)
         self.processor = AutoProcessor.from_pretrained(model_name_or_path)
         self.pipe = pipeline(
             "automatic-speech-recognition",
@@ -65,6 +65,7 @@ class SpeechRecognition:
             chunk_length_s=chunk_length_s,
             batch_size=batch_size,
             torch_dtype=torch_dtype,
+            device=self.device,
             **kwargs
         )
         self.pipe.model.config.forced_decoder_ids = (
