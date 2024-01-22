@@ -19,6 +19,10 @@ class SpeechRecognition:
             model_name_or_path: str = "BELLE-2/Belle-distilwhisper-large-v2-zh",
             use_cuda: Optional[bool] = has_cuda,
             cuda_device: Optional[int] = -1,
+            max_new_tokens: Optional[int] = 128,
+            chunk_length_s: Optional[int] = 15,
+            batch_size: Optional[int] = 16,
+            torch_dtype: Optional[str] = 'auto',
             use_flash_attention_2: Optional[bool] = False,
             **kwargs
     ):
@@ -46,24 +50,22 @@ class SpeechRecognition:
 
         self.model = AutoModelForSpeechSeq2Seq.from_pretrained(
             model_name_or_path,
-            torch_dtype='auto',
+            torch_dtype=torch_dtype,
             device_map=self.device_map,
             low_cpu_mem_usage=True,
             use_flash_attention_2=use_flash_attention_2,
         )
-        self.model.to(self.device)
-
         self.processor = AutoProcessor.from_pretrained(model_name_or_path)
         self.pipe = pipeline(
             "automatic-speech-recognition",
             model=self.model,
             tokenizer=self.processor.tokenizer,
             feature_extractor=self.processor.feature_extractor,
-            max_new_tokens=128,
-            chunk_length_s=15,
-            batch_size=16,
-            torch_dtype='auto',
-            device=self.device,
+            max_new_tokens=max_new_tokens,
+            chunk_length_s=chunk_length_s,
+            batch_size=batch_size,
+            torch_dtype=torch_dtype,
+            **kwargs
         )
         self.pipe.model.config.forced_decoder_ids = (
             self.pipe.tokenizer.get_decoder_prompt_ids(
