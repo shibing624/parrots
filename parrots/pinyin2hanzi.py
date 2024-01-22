@@ -13,7 +13,7 @@ pwd_path = os.path.abspath(os.path.dirname(__file__))
 pinyin2hanzi_dir = os.path.join(pwd_path, 'data/pinyin2hanzi')
 
 
-class Pinyin2Hanzi(object):
+class Pinyin2Hanzi:
     def __init__(self, model_dir=pinyin2hanzi_dir):
         self.dict_pinyin = self.get_symbol_dict(os.path.join(model_dir, 'pinyin_hanzi_dict.txt'))
         self.model1 = self.get_model_file(os.path.join(model_dir, 'char_idx.txt'))

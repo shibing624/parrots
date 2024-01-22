@@ -3,164 +3,150 @@
 @author:XuMing(xuming624@qq.com)
 @description:
 """
-import os
-from loguru import logger
+from typing import Optional, Union
 
 import numpy as np
-from tensorflow.keras import backend as K
-from tensorflow.keras.layers import Dense, Dropout, Input, Reshape
-from tensorflow.keras.layers import Lambda, Activation, Conv2D, MaxPooling2D
-from tensorflow.keras.models import Model
-from tensorflow.keras.optimizers import Adam
+import torch
+from loguru import logger
+from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor, pipeline
 
-from parrots.wav_util import get_frequency_features, read_wav_data, get_pinyin_list
-
-pwd_path = os.path.abspath(os.path.dirname(__file__))
-
-pinyin_hanzi_dict_path = os.path.join(pwd_path, 'data/pinyin2hanzi/pinyin_hanzi_dict.txt')
-speech_recognition_model_path = os.path.join(pwd_path, 'data/speech_model/speech_recognition.model')
+has_cuda = torch.cuda.is_available()
 
 
-class SpeechRecognition(object):
-    def __init__(self, pinyin_path=pinyin_hanzi_dict_path,
-                 model_path=speech_recognition_model_path,
-                 ms_output_size=1422):
-        # 默认输出的拼音的表示大小是1422，即1421个拼音+1个空白块
-        self.ms_output_size = ms_output_size  # 神经网络最终输出的每一个字符向量维度的大小
-        self.label_max_string_length = 64
-        self.AUDIO_LENGTH = 1600
-        self.AUDIO_FEATURE_LENGTH = 200
-        self.initialized = False
-        self._model, self.base_model = self.create_model()
-        if pinyin_path:
-            self.pinyin_list = get_pinyin_list(pinyin_path)  # 获取拼音列表
-            logger.debug(
-                "Pinyin dict Loaded. Pinyin dict length: {}".format(len(self.pinyin_list)))
-        if model_path:
-            self._model.load_weights(model_path)
-            self.base_model.load_weights(model_path + '.base')
-            logger.debug("Speech recognition model has been loaded.")
+class SpeechRecognition:
+    def __init__(
+            self,
+            model_name_or_path: str = "BELLE-2/Belle-distilwhisper-large-v2-zh",
+            use_cuda: Optional[bool] = has_cuda,
+            cuda_device: Optional[int] = -1,
+            use_flash_attention_2: Optional[bool] = False,
+            **kwargs
+    ):
+        self.device_map = "auto"
+        if use_cuda:
+            if torch.cuda.is_available():
+                if cuda_device == -1:
+                    self.device = torch.device("cuda")
+                else:
+                    self.device = torch.device(f"cuda:{cuda_device}")
+                    self.device_map = {"": int(cuda_device)}
+            else:
+                raise ValueError(
+                    "'use_cuda' set to True when cuda is unavailable."
+                    "Make sure CUDA is available or set `use_cuda=False`."
+                )
+        else:
+            if torch.backends.mps.is_available():
+                self.device = torch.device("mps")
+                self.device_map = {"": "mps"}
+            else:
+                self.device = "cpu"
+                self.device_map = {"": "cpu"}
+        logger.debug(f"Device: {self.device}")
 
-    def create_model(self):
+        self.model = AutoModelForSpeechSeq2Seq.from_pretrained(
+            model_name_or_path,
+            torch_dtype='auto',
+            device_map=self.device_map,
+            low_cpu_mem_usage=True,
+            use_flash_attention_2=use_flash_attention_2,
+        )
+        self.model.to(self.device)
+
+        self.processor = AutoProcessor.from_pretrained(model_name_or_path)
+        self.pipe = pipeline(
+            "automatic-speech-recognition",
+            model=self.model,
+            tokenizer=self.processor.tokenizer,
+            feature_extractor=self.processor.feature_extractor,
+            max_new_tokens=128,
+            chunk_length_s=15,
+            batch_size=16,
+            torch_dtype='auto',
+            device=self.device,
+        )
+        logger.debug(f"Speech recognition model: {model_name_or_path} has been loaded.")
+
+    def recognize_speech(self, inputs: Union[np.ndarray, bytes, str]):
+        """语音识别用的函数，识别一个wav序列的语音
+        Transcribe the audio sequence(s) given as inputs to text. See the [`AutomaticSpeechRecognitionPipeline`]
+        documentation for more information.
+
+        Args:
+            inputs (`np.ndarray` or `bytes` or `str` or `dict`):
+                The inputs is either :
+                    - `str` that is either the filename of a local audio file, or a public URL address to download the
+                      audio file. The file will be read at the correct sampling rate to get the waveform using
+                      *ffmpeg*. This requires *ffmpeg* to be installed on the system.
+                    - `bytes` it is supposed to be the content of an audio file and is interpreted by *ffmpeg* in the
+                      same way.
+                    - (`np.ndarray` of shape (n, ) of type `np.float32` or `np.float64`)
+                        Raw audio at the correct sampling rate (no further check will be done)
+                    - `dict` form can be used to pass raw audio sampled at arbitrary `sampling_rate` and let this
+                      pipeline do the resampling. The dict must be in the format `{"sampling_rate": int, "raw":
+                      np.array}` with optionally a `"stride": (left: int, right: int)` than can ask the pipeline to
+                      treat the first `left` samples and last `right` samples to be ignored in decoding (but used at
+                      inference to provide more context to the model). Only use `stride` with CTC models.
+            return_timestamps (*optional*, `str` or `bool`):
+                Only available for pure CTC models (Wav2Vec2, HuBERT, etc) and the Whisper model. Not available for
+                other sequence-to-sequence models.
+
+                For CTC models, timestamps can take one of two formats:
+                    - `"char"`: the pipeline will return timestamps along the text for every character in the text. For
+                        instance, if you get `[{"text": "h", "timestamp": (0.5, 0.6)}, {"text": "i", "timestamp": (0.7,
+                        0.9)}]`, then it means the model predicts that the letter "h" was spoken after `0.5` and before
+                        `0.6` seconds.
+                    - `"word"`: the pipeline will return timestamps along the text for every word in the text. For
+                        instance, if you get `[{"text": "hi ", "timestamp": (0.5, 0.9)}, {"text": "there", "timestamp":
+                        (1.0, 1.5)}]`, then it means the model predicts that the word "hi" was spoken after `0.5` and
+                        before `0.9` seconds.
+
+                For the Whisper model, timestamps can take one of two formats:
+                    - `"word"`: same as above for word-level CTC timestamps. Word-level timestamps are predicted
+                        through the *dynamic-time warping (DTW)* algorithm, an approximation to word-level timestamps
+                        by inspecting the cross-attention weights.
+                    - `True`: the pipeline will return timestamps along the text for *segments* of words in the text.
+                        For instance, if you get `[{"text": " Hi there!", "timestamp": (0.5, 1.5)}]`, then it means the
+                        model predicts that the segment "Hi there!" was spoken after `0.5` and before `1.5` seconds.
+                        Note that a segment of text refers to a sequence of one or more words, rather than individual
+                        words as with word-level timestamps.
+            generate_kwargs (`dict`, *optional*):
+                The dictionary of ad-hoc parametrization of `generate_config` to be used for the generation call. For a
+                complete overview of generate, check the [following
+                guide](https://huggingface.co/docs/transformers/en/main_classes/text_generation).
+            max_new_tokens (`int`, *optional*):
+                The maximum numbers of tokens to generate, ignoring the number of tokens in the prompt.
+
+        Return:
+            `Dict`: A dictionary with the following keys:
+                - **text** (`str`): The recognized text.
+                - **chunks** (*optional(, `List[Dict]`)
+                    When using `return_timestamps`, the `chunks` will become a list containing all the various text
+                    chunks identified by the model, *e.g.* `[{"text": "hi ", "timestamp": (0.5, 0.9)}, {"text":
+                    "there", "timestamp": (1.0, 1.5)}]`. The original full text can roughly be recovered by doing
+                    `"".join(chunk["text"] for chunk in output["chunks"])`.
         """
-        定义CNN/LSTM/CTC模型，使用函数式模型
-        输入层：200维的特征值序列，一条语音数据的最大长度设为1600(大约16s）
-        隐藏层：卷积池化层，卷积核大小为3x3，池化窗口大小为2
-        隐藏层：全连接层
-        输出层：全连接层，神经元数量为self.ms_output_size，使用softmax作为激活函数，
-        CTC层：使用CTC的loss作为损失函数，实现连接性时序多输出
-        :return:
+
         """
-        input_data = Input(name='the_input', shape=(self.AUDIO_LENGTH, self.AUDIO_FEATURE_LENGTH, 1))
+        import time
 
-        layer_h1 = Conv2D(32, (3, 3), use_bias=False, activation='relu', padding='same',
-                          kernel_initializer='he_normal')(input_data)  # 卷积层
-        layer_h1 = Dropout(0.05)(layer_h1)
-        layer_h2 = Conv2D(32, (3, 3), use_bias=True, activation='relu', padding='same', kernel_initializer='he_normal')(
-            layer_h1)  # 卷积层
-        layer_h3 = MaxPooling2D(pool_size=2, strides=None, padding="valid")(layer_h2)  # 池化层
-        # layer_h3 = Dropout(0.2)(layer_h2) # 随机中断部分神经网络连接，防止过拟合
-        layer_h3 = Dropout(0.05)(layer_h3)
-        layer_h4 = Conv2D(64, (3, 3), use_bias=True, activation='relu', padding='same', kernel_initializer='he_normal')(
-            layer_h3)  # 卷积层
-        layer_h4 = Dropout(0.1)(layer_h4)
-        layer_h5 = Conv2D(64, (3, 3), use_bias=True, activation='relu', padding='same', kernel_initializer='he_normal')(
-            layer_h4)  # 卷积层
-        layer_h6 = MaxPooling2D(pool_size=2, strides=None, padding="valid")(layer_h5)  # 池化层
+        def generate_with_time(model, inputs):
+            start_time = time.time()
+            outputs = model.generate(**inputs)
+            generation_time = time.time() - start_time
+            return outputs, generation_time
+    
+        for sample in tqdm(dataset):
+            audio = sample["audio"]
+            inputs = processor(audio["array"], sampling_rate=audio["sampling_rate"], return_tensors="pt")
+            inputs = inputs.to(device=device, dtype=torch.float16)
+            
+            output, gen_time = generate_with_time(distil_model, inputs)
+            all_time += gen_time
+            print(processor.batch_decode(output, skip_special_tokens=True))
 
-        layer_h6 = Dropout(0.1)(layer_h6)
-        layer_h7 = Conv2D(128, (3, 3), use_bias=True, activation='relu', padding='same',
-                          kernel_initializer='he_normal')(layer_h6)  # 卷积层
-        layer_h7 = Dropout(0.15)(layer_h7)
-        layer_h8 = Conv2D(128, (3, 3), use_bias=True, activation='relu', padding='same',
-                          kernel_initializer='he_normal')(layer_h7)  # 卷积层
-        layer_h9 = MaxPooling2D(pool_size=2, strides=None, padding="valid")(layer_h8)  # 池化层
-
-        layer_h9 = Dropout(0.15)(layer_h9)
-        layer_h10 = Conv2D(128, (3, 3), use_bias=True, activation='relu', padding='same',
-                           kernel_initializer='he_normal')(layer_h9)  # 卷积层
-        layer_h10 = Dropout(0.2)(layer_h10)
-        layer_h11 = Conv2D(128, (3, 3), use_bias=True, activation='relu', padding='same',
-                           kernel_initializer='he_normal')(layer_h10)  # 卷积层
-        layer_h12 = MaxPooling2D(pool_size=1, strides=None, padding="valid")(layer_h11)  # 池化层
-
-        layer_h12 = Dropout(0.2)(layer_h12)
-        layer_h13 = Conv2D(128, (3, 3), use_bias=True, activation='relu', padding='same',
-                           kernel_initializer='he_normal')(layer_h12)  # 卷积层
-        layer_h13 = Dropout(0.2)(layer_h13)
-        layer_h14 = Conv2D(128, (3, 3), use_bias=True, activation='relu', padding='same',
-                           kernel_initializer='he_normal')(layer_h13)  # 卷积层
-        layer_h15 = MaxPooling2D(pool_size=1, strides=None, padding="valid")(layer_h14)  # 池化层
-
-        layer_h16 = Reshape((200, 3200))(layer_h15)  # Reshape层
-        layer_h16 = Dropout(0.3)(layer_h16)
-        layer_h17 = Dense(128, activation="relu", use_bias=True, kernel_initializer='he_normal')(layer_h16)  # 全连接层
-        layer_h17 = Dropout(0.3)(layer_h17)
-        layer_h18 = Dense(self.ms_output_size, use_bias=True, kernel_initializer='he_normal')(layer_h17)  # 全连接层
-
-        y_pred = Activation('softmax', name='Activation0')(layer_h18)
-        model_data = Model(inputs=input_data, outputs=y_pred)
-        # model_data.summary()
-
-        labels = Input(name='the_labels', shape=[self.label_max_string_length], dtype='float32')
-        input_length = Input(name='input_length', shape=[1], dtype='int64')
-        label_length = Input(name='label_length', shape=[1], dtype='int64')
-        # Keras doesn't currently support loss funcs with extra parameters
-        # so CTC loss is implemented in a lambda layer
-        loss_out = Lambda(self.ctc_lambda_func, output_shape=(1,), name='ctc')(
-            [y_pred, labels, input_length, label_length])
-
-        model = Model(inputs=[input_data, labels, input_length, label_length], outputs=loss_out)
-        # model.summary()
-
-        # clip norm seems to speeds up convergence
-        opt = Adam(lr=0.001, beta_1=0.9, beta_2=0.999, decay=0.0, epsilon=10e-8)
-        model.compile(loss={'ctc': lambda y_true, y_pred: y_pred}, optimizer=opt)
-        return model, model_data
-
-    def ctc_lambda_func(self, args):
-        y_pred, labels, input_length, label_length = args
-
-        y_pred = y_pred[:, :, :]
-        return K.ctc_batch_cost(labels, y_pred, input_length, label_length)
-
-    def predict(self, data_input, input_len):
         """
-        预测结果
-        :param data_input:
-        :param input_len:
-        :return: 返回语音识别后的拼音符号列表
-        """
-        batch_size = 1
-        in_len = np.zeros((batch_size), dtype=np.int32)
-        in_len[0] = input_len
-        x_in = np.zeros((batch_size, 1600, self.AUDIO_FEATURE_LENGTH, 1), dtype=np.float)
-
-        for i in range(batch_size):
-            x_in[i, 0:len(data_input)] = data_input
-        base_pred = self.base_model.predict(x=x_in)
-        base_pred = base_pred[:, :, :]
-        decoder = K.ctc_decode(base_pred, in_len, greedy=True, beam_width=100, top_paths=1)
-        result = K.get_value(decoder[0][0])[0]
-        return result
-
-    def recognize_speech(self, wavsignal, fs):
-        """
-        语音识别用的函数，识别一个wav序列的语音
-        :param wavsignal:
-        :param fs:
-        :return:
-        """
-        result = []
-        data_input = get_frequency_features(wavsignal, fs)
-        input_length = len(data_input)
-        input_length = input_length // 8
-        data_input = np.array(data_input, dtype=np.float)
-        data_input = data_input.reshape(data_input.shape[0], data_input.shape[1], 1)
-        preds = self.predict(data_input, input_length)
-        for i in preds:
-            result.append(self.pinyin_list[i])
-        return result
+        return self.pipe(inputs)
 
     def recognize_speech_from_file(self, filename):
         """
@@ -168,13 +154,4 @@ class SpeechRecognition(object):
         :param filename: 识别指定文件名的语音
         :return:
         """
-        signal, fs = read_wav_data(filename)
-        return self.recognize_speech(signal, fs)
-
-    @property
-    def model(self):
-        """
-        model
-        :return: keras model
-        """
-        return self._model
+        return self.recognize_speech(filename)
