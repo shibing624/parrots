@@ -71,15 +71,11 @@ if __name__ == '__main__':
     r = m.recognize_speech_from_file(os.path.join(pwd_path, 'tushuguan.wav'))
     print('[提示] 语音识别结果：', r)
 
-    n = Pinyin2Hanzi()
-    text = n.pinyin_2_hanzi(r)
-    print('[提示] 语音转文字结果：', text)
-
 ```
 
 output:
 ```
-北京图书馆
+{'text': '北京图书馆'}
 ```
 
 ### TTS(Speech Synthesis)
