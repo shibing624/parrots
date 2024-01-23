@@ -23,6 +23,7 @@ class SpeechRecognition:
             chunk_length_s: Optional[int] = 15,
             batch_size: Optional[int] = 16,
             torch_dtype: Optional[str] = "float16",
+            language: Optional[str] = "zh",
             **kwargs
     ):
         self.device_map = "auto"
@@ -69,12 +70,13 @@ class SpeechRecognition:
             chunk_length_s=chunk_length_s,
             **kwargs
         )
-        self.pipe.model.config.forced_decoder_ids = (
-            self.pipe.tokenizer.get_decoder_prompt_ids(
-                language="zh",
-                task="transcribe"
+        if language == "zh":
+            self.pipe.model.config.forced_decoder_ids = (
+                self.pipe.tokenizer.get_decoder_prompt_ids(
+                    language=language,
+                    task="transcribe"
+                )
             )
-        )
         logger.debug(f"Speech recognition model: {model_name_or_path} has been loaded.")
 
     def predict(self, inputs: Union[np.ndarray, bytes, str]):
