@@ -70,13 +70,12 @@ class SpeechRecognition:
             chunk_length_s=chunk_length_s,
             **kwargs
         )
-        if language == "zh":
-            self.pipe.model.config.forced_decoder_ids = (
-                self.pipe.tokenizer.get_decoder_prompt_ids(
-                    language=language,
-                    task="transcribe"
-                )
+        self.pipe.model.config.forced_decoder_ids = (
+            self.pipe.tokenizer.get_decoder_prompt_ids(
+                language=language,
+                task="transcribe"
             )
+        )
         logger.debug(f"Speech recognition model: {model_name_or_path} has been loaded.")
 
     def predict(self, inputs: Union[np.ndarray, bytes, str]):
