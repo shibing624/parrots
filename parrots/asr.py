@@ -23,9 +23,26 @@ class SpeechRecognition:
             chunk_length_s: Optional[int] = 15,
             batch_size: Optional[int] = 16,
             torch_dtype: Optional[str] = "float16",
+            use_flash_attention_2: Optional[bool] = False,
             language: Optional[str] = "zh",
             **kwargs
     ):
+        """
+        Initialize the speech recognition object.
+        :param model_name_or_path: Model name or path, like:
+            'BELLE-2/Belle-distilwhisper-large-v2-zh', 'distil-whisper/distil-large-v2', ...
+            model in HuggingFace Model Hub and release from
+        :param use_cuda: Whether or not to use CUDA for inference.
+        :param cuda_device: Which cuda device to use for inference.
+        :param max_new_tokens: The maximum number of new tokens to generate, ignoring the number of tokens in the
+            prompt.
+        :param chunk_length_s: The length in seconds of the audio chunks to feed to the model.
+        :param batch_size: The batch size to use for inference.
+        :param torch_dtype: The torch dtype to use for inference.
+        :param use_flash_attention_2: Whether or not to use the FlashAttention2 module.
+        :param language: The language of the model to use.
+        :param kwargs: Additional keyword arguments passed along to the pipeline.
+        """
         self.device_map = "auto"
         if use_cuda:
             if torch.cuda.is_available():
@@ -53,7 +70,10 @@ class SpeechRecognition:
             else getattr(torch, torch_dtype)
         )
         self.model = AutoModelForSpeechSeq2Seq.from_pretrained(
-            model_name_or_path, torch_dtype=torch_dtype, low_cpu_mem_usage=True
+            model_name_or_path,
+            torch_dtype=torch_dtype,
+            low_cpu_mem_usage=True,
+            use_flash_attention_2=use_flash_attention_2,
         )
         self.model.to(self.device)
 
@@ -70,12 +90,13 @@ class SpeechRecognition:
             chunk_length_s=chunk_length_s,
             **kwargs
         )
-        self.pipe.model.config.forced_decoder_ids = (
-            self.pipe.tokenizer.get_decoder_prompt_ids(
-                language=language,
-                task="transcribe"
+        if language == 'zh':
+            self.pipe.model.config.forced_decoder_ids = (
+                self.pipe.tokenizer.get_decoder_prompt_ids(
+                    language=language,
+                    task="transcribe"
+                )
             )
-        )
         logger.debug(f"Speech recognition model: {model_name_or_path} has been loaded.")
 
     def predict(self, inputs: Union[np.ndarray, bytes, str]):
