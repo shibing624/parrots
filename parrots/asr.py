@@ -8,7 +8,7 @@ from typing import Optional, Union
 import numpy as np
 import torch
 from loguru import logger
-from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor, pipeline
+from transformers import pipeline
 
 has_cuda = torch.cuda.is_available()
 
@@ -23,7 +23,6 @@ class SpeechRecognition:
             chunk_length_s: Optional[int] = 15,
             batch_size: Optional[int] = 16,
             torch_dtype: Optional[str] = 'auto',
-            use_flash_attention_2: Optional[bool] = False,
             **kwargs
     ):
         self.device_map = "auto"
@@ -46,18 +45,15 @@ class SpeechRecognition:
             else:
                 self.device = "cpu"
                 self.device_map = {"": "cpu"}
-        logger.debug(f"Device: {self.device}")
 
-        # self.model = AutoModelForSpeechSeq2Seq.from_pretrained(
-        #     model_name_or_path,
-        #     torch_dtype=torch_dtype,
-        #     use_flash_attention_2=use_flash_attention_2,
-        # )
-        # self.model.to(self.device)
-        # self.processor = AutoProcessor.from_pretrained(model_name_or_path)
         self.pipe = pipeline(
             "automatic-speech-recognition",
             model=model_name_or_path,
+            device_map=self.device_map,
+            torch_dtype=torch_dtype,
+            max_new_tokens=max_new_tokens,
+            batch_size=batch_size,
+            chunk_length_s=chunk_length_s,
             **kwargs
         )
         self.pipe.model.config.forced_decoder_ids = (
@@ -68,7 +64,7 @@ class SpeechRecognition:
         )
         logger.debug(f"Speech recognition model: {model_name_or_path} has been loaded.")
 
-    def recognize_speech(self, inputs: Union[np.ndarray, bytes, str]):
+    def predict(self, inputs: Union[np.ndarray, bytes, str]):
         """语音识别用的函数，识别一个wav序列的语音
         Transcribe the audio sequence(s) given as inputs to text. See the [`AutomaticSpeechRecognitionPipeline`]
         documentation for more information.
@@ -155,4 +151,4 @@ class SpeechRecognition:
         :param filename: 识别指定文件名的语音
         :return:
         """
-        return self.recognize_speech(filename)
+        return self.predict(filename)
