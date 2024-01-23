@@ -51,17 +51,17 @@ class SpeechRecognition:
             if torch_dtype in ["auto", None]
             else getattr(torch, torch_dtype)
         )
-        model = AutoModelForSpeechSeq2Seq.from_pretrained(
+        self.model = AutoModelForSpeechSeq2Seq.from_pretrained(
             model_name_or_path, torch_dtype=torch_dtype, low_cpu_mem_usage=True
         )
-        model.to(self.device)
+        self.model.to(self.device)
 
-        processor = AutoProcessor.from_pretrained(model_name_or_path)
+        self.processor = AutoProcessor.from_pretrained(model_name_or_path)
         self.pipe = pipeline(
             "automatic-speech-recognition",
-            model=model,
-            tokenizer=processor.tokenizer,
-            feature_extractor=processor.feature_extractor,
+            model=self.model,
+            tokenizer=self.processor.tokenizer,
+            feature_extractor=self.processor.feature_extractor,
             device=self.device,
             torch_dtype=torch_dtype,
             max_new_tokens=max_new_tokens,
