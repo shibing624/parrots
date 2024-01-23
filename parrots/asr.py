@@ -135,27 +135,19 @@ class SpeechRecognition:
                     chunks identified by the model, *e.g.* `[{"text": "hi ", "timestamp": (0.5, 0.9)}, {"text":
                     "there", "timestamp": (1.0, 1.5)}]`. The original full text can roughly be recovered by doing
                     `"".join(chunk["text"] for chunk in output["chunks"])`.
+
+        example:
+        ```
+            for sample in tqdm(dataset):
+                audio = sample["audio"]
+                inputs = processor(audio["array"], sampling_rate=audio["sampling_rate"], return_tensors="pt")
+                inputs = inputs.to(device=device, dtype=torch.float16)
+
+                outputs = model.generate(**inputs)
+                print(processor.batch_decode(outputs, skip_special_tokens=True))
+        ```
         """
 
-        """
-        import time
-
-        def generate_with_time(model, inputs):
-            start_time = time.time()
-            outputs = model.generate(**inputs)
-            generation_time = time.time() - start_time
-            return outputs, generation_time
-    
-        for sample in tqdm(dataset):
-            audio = sample["audio"]
-            inputs = processor(audio["array"], sampling_rate=audio["sampling_rate"], return_tensors="pt")
-            inputs = inputs.to(device=device, dtype=torch.float16)
-            
-            output, gen_time = generate_with_time(distil_model, inputs)
-            all_time += gen_time
-            print(processor.batch_decode(output, skip_special_tokens=True))
-
-        """
         return self.pipe(inputs)
 
     def recognize_speech_from_file(self, filename):
