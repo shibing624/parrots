@@ -8,7 +8,7 @@ from typing import Optional, Union
 import numpy as np
 import torch
 from loguru import logger
-from transformers import pipeline
+from transformers import pipeline, AutoModelForSpeechSeq2Seq, AutoProcessor
 
 has_cuda = torch.cuda.is_available()
 
@@ -22,7 +22,7 @@ class SpeechRecognition:
             max_new_tokens: Optional[int] = 128,
             chunk_length_s: Optional[int] = 15,
             batch_size: Optional[int] = 16,
-            torch_dtype: Optional[str] = 'auto',
+            torch_dtype: Optional[str] = "float16",
             **kwargs
     ):
         self.device_map = "auto"
@@ -46,10 +46,23 @@ class SpeechRecognition:
                 self.device = "cpu"
                 self.device_map = {"": "cpu"}
 
+        torch_dtype = (
+            torch_dtype
+            if torch_dtype in ["auto", None]
+            else getattr(torch, torch_dtype)
+        )
+        model = AutoModelForSpeechSeq2Seq.from_pretrained(
+            model_name_or_path, torch_dtype=torch_dtype, low_cpu_mem_usage=True
+        )
+        model.to(self.device)
+
+        processor = AutoProcessor.from_pretrained(model_name_or_path)
         self.pipe = pipeline(
             "automatic-speech-recognition",
-            model=model_name_or_path,
-            device_map=self.device_map,
+            model=model,
+            tokenizer=processor.tokenizer,
+            feature_extractor=processor.feature_extractor,
+            device=self.device,
             torch_dtype=torch_dtype,
             max_new_tokens=max_new_tokens,
             batch_size=batch_size,
