@@ -15,6 +15,7 @@ import ffmpeg
 import librosa
 import numpy as np
 import torch
+from loguru import logger
 from transformers import AutoModelForMaskedLM, AutoTokenizer
 
 sys.path.append('..')
@@ -23,6 +24,7 @@ from parrots.mel_processing import spectrogram_torch
 from parrots.synthesizer_model import SynthesizerModel
 from parrots.t2s_model import Text2SemanticDecoder
 from parrots.text_utils import clean_text, cleaned_text_to_sequence
+
 args: argparse.Namespace
 model_mappings: Dict[str, Any] = {}
 splits_flags = {
@@ -78,7 +80,7 @@ def get_bert_feature(text, word2ph):
     with torch.no_grad():
         inputs = tokenizer(text, return_tensors="pt")
         for i in inputs:
-            inputs[i] = inputs[i].to(args.device)  #####输入是long不用管精度问题，精度随bert_model
+            inputs[i] = inputs[i].to(bert_model.device)
         res = bert_model(**inputs, output_hidden_states=True)
         res = torch.cat(res["hidden_states"][-3:-2], -1)[0].cpu()[1:-1]
     assert len(word2ph) == len(text)
@@ -87,7 +89,6 @@ def get_bert_feature(text, word2ph):
         repeat_feature = res[i].repeat(word2ph[i], 1)
         phone_level_feature.append(repeat_feature)
     phone_level_feature = torch.cat(phone_level_feature, dim=0)
-    # if(is_half==True):phone_level_feature=phone_level_feature.half()
     return phone_level_feature.T
 
 
@@ -325,6 +326,8 @@ def load_models():
     hps = DictToAttrRecursive(dict_s2["config"])
     hps.model.semantic_frame_rate = "25hz"
     model_mappings["hps"] = hps
+    logger.info(f"hps: {hps}")
+    logger.info(f"hps: {hps.model}")
 
     # VQ
     vq_model = SynthesizerModel(
@@ -336,12 +339,12 @@ def load_models():
     vq_model = to_device(vq_model)
     vq_model.eval()
     model_mappings["vq_model"] = vq_model
-    print(vq_model.load_state_dict(dict_s2["weight"], strict=False))
+    logger.info(vq_model.load_state_dict(dict_s2["weight"], strict=False))
 
     # GPT
     dict_s1 = torch.load(args.gpt, map_location="cpu")
     config = dict_s1["config"]
-    print(config)
+    logger.info(f"config: {config}")
     # t2s_model = Text2SemanticLightningModule(config, "ojbk", is_train=False)
     t2s_model = Text2SemanticDecoder(config=config, top_k=3)
     t2s_model.load_state_dict(dict_s1["weight"])
@@ -353,7 +356,7 @@ def load_models():
         "max_sec": config["data"]["max_sec"],
     }
     total = sum([param.nelement() for param in t2s_model.parameters()])
-    print("Number of parameter: %.2fM" % (total / 1e6))
+    logger.info("Number of parameter: %.2fM" % (total / 1e6))
 
 
 def pcm16_header(rate, size=1000000000, channels=1):
