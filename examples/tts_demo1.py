@@ -7,7 +7,7 @@ import argparse
 import sys
 
 sys.path.append('..')
-from parrots.text2speech import load_models, inference, model_mappings, save_wav
+from parrots.text2speech import load_models, inference, model_mappings, save_wav, args
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -47,7 +47,9 @@ if __name__ == "__main__":
                         default="大家好，我是宁宁。我中文还不是很熟练，但是希望大家能喜欢我的声音，喵喵喵！",
                         help="reference text")
     parser.add_argument("--ref_lang", type=str, default="zh", help="reference wav language")
-    args = parser.parse_args()
+    new_args = parser.parse_args()
+    args = new_args
+
     load_models()
     hps = model_mappings["hps"]
 
@@ -58,6 +60,7 @@ if __name__ == "__main__":
         "text": args.text,
         "text_language": args.lang,
     }
+    print(args)
     print(params)
 
     audio_stream = inference(**params)

@@ -8,7 +8,6 @@ import re
 import struct
 import sys
 import wave
-from pprint import pprint
 from typing import Dict, Any
 
 import ffmpeg
@@ -142,7 +141,7 @@ def inference(ref_wav_path, prompt_text, prompt_language, text, text_language):
     if text[-1] not in splits_flags:
         text += "。" if text_language != "en" else "."
     texts = text.split("\n")
-    pprint(texts)
+    logger.debug(f"texts: {texts}")
 
     # audio_opt = []
     if prompt_language == "en":
@@ -432,6 +431,7 @@ if __name__ == "__main__":
                         help="reference text")
     parser.add_argument("--ref_lang", type=str, default="zh", help="reference wav language")
     args = parser.parse_args()
+    logger.info(f"args: {args}")
     load_models()
     hps = model_mappings["hps"]
 
@@ -442,7 +442,7 @@ if __name__ == "__main__":
         "text": args.text,
         "text_language": args.lang,
     }
-    pprint(params)
+    logger.info(params)
 
     audio_stream = inference(**params)
     # 为了获取WAV文件的头部和音频数据
