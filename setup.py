@@ -10,8 +10,8 @@ with open('README.md', 'r', encoding='utf-8') as f:
 
 setup(
     name='parrots',
-    version='0.1.8',
-    description='Chinese Text To Speech and Speech Recognition',
+    version='0.1.9',
+    description='Parrots, Automatic Speech Recognition(**ASR**), Text-To-Speech(**TTS**) toolkit',
     long_description=readme,
     long_description_content_type='text/markdown',
     author='XuMing',
@@ -35,5 +35,5 @@ setup(
     packages=find_packages(exclude=['tests']),
     package_dir={'parrots': 'parrots'},
     package_data={
-        'parrots': ['*.*', 'data/*', 'data/pinyin2hanzi/*', 'data/speech_model/*']}
+        'parrots': ['*.*', 'data/*', 'data/pinyin2hanzi/*']}
 )

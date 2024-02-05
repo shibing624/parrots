@@ -6,6 +6,7 @@
 import argparse
 import re
 import struct
+import sys
 import wave
 from pprint import pprint
 from typing import Dict, Any
@@ -16,12 +17,13 @@ import numpy as np
 import torch
 from transformers import AutoModelForMaskedLM, AutoTokenizer
 
+sys.path.append('..')
 from parrots import cnhubert
 from parrots.mel_processing import spectrogram_torch
 from parrots.synthesizer_model import SynthesizerModel
 from parrots.t2s_model import Text2SemanticDecoder
 from parrots.text_utils import clean_text, cleaned_text_to_sequence
-
+args: argparse.Namespace
 model_mappings: Dict[str, Any] = {}
 splits_flags = {
     "，",
