@@ -7,7 +7,7 @@ import argparse
 import sys
 
 sys.path.append('..')
-from parrots.text2speech import load_models, inference, model_mappings, save_wav, args
+from parrots.text2speech import load_models, inference, model_mappings, save_wav
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

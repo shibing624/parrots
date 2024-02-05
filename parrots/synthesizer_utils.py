@@ -2164,7 +2164,7 @@ class ConvNorm(nn.Module):
         return out
 
 
-class MultiHeadAttention(nn.Module):
+class MelMultiHeadAttention(nn.Module):
     """Multi-Head Attention module"""
 
     def __init__(self, n_head, d_model, d_k, d_v, dropout=0.0, spectral_norm=False):
@@ -2278,7 +2278,7 @@ class MelStyleEncoder(nn.Module):
             Conv1dGLU(self.hidden_dim, self.hidden_dim, self.kernel_size, self.dropout),
         )
 
-        self.slf_attn = MultiHeadAttention(
+        self.slf_attn = MelMultiHeadAttention(
             self.n_head,
             self.hidden_dim,
             self.hidden_dim // self.n_head,

@@ -24,7 +24,6 @@ from parrots.synthesizer_model import SynthesizerModel
 from parrots.t2s_model import Text2SemanticDecoder
 from parrots.text_utils import clean_text, cleaned_text_to_sequence
 
-args: argparse.Namespace
 model_mappings: Dict[str, Any] = {}
 splits_flags = {
     "，",
@@ -326,12 +325,12 @@ def load_models():
     hps.model.semantic_frame_rate = "25hz"
     model_mappings["hps"] = hps
     logger.info(f"hps: {hps}")
-    logger.info(f"hps: {hps.model}")
+    logger.info(f"hps.model: {hps.model}")
 
     # VQ
     vq_model = SynthesizerModel(
-        hps.data.filter_length // 2 + 1,
-        hps.train.segment_size // hps.data.hop_length,
+        spec_channels=hps.data.filter_length // 2 + 1,
+        segment_size=hps.train.segment_size // hps.data.hop_length,
         n_speakers=hps.data.n_speakers,
         **hps.model,
     )
