@@ -8,40 +8,31 @@
 
 -----------------
 
-# Parrots: Chinese ASR and TTS toolkit
+**parrots**实现了中文语音识别和语音合成模型，开箱即用。
+
+# Parrots: ASR and TTS toolkit
 [![PyPI version](https://badge.fury.io/py/parrots.svg)](https://badge.fury.io/py/parrots)
-[![Downloads](https://pepy.tech/badge/parrots)](https://pepy.tech/project/parrots)
+[![Downloads](https://static.pepy.tech/badge/parrots)](https://pepy.tech/project/parrots)
 [![Contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg)](CONTRIBUTING.md)
 [![GitHub contributors](https://img.shields.io/github/contributors/shibing624/parrots.svg)](https://github.com/shibing624/parrots/graphs/contributors)
 [![License Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![python_vesion](https://img.shields.io/badge/Python-3.7%2B-green.svg)](requirements.txt)
 [![GitHub issues](https://img.shields.io/github/issues/shibing624/parrots.svg)](https://github.com/shibing624/parrots/issues)
-[![Wechat Group](http://vlog.sfyc.ltd/wechat_everyday/wxgroup_logo.png?imageView2/0/w/60/h/20)](#Contact)
+[![Wechat Group](https://img.shields.io/badge/wechat-group-green.svg?logo=wechat)](#Contact)
 
 ## Introduction
-Parrots, Chinese Automatic Speech Recognition(**ASR**), Text-To-Speech(**TTS**) engine.
+Parrots, Automatic Speech Recognition(**ASR**), Text-To-Speech(**TTS**) toolkit, support Chinese, English, Japanese, etc.
 
-**parrots**实现了中文语音识别和语音合成模型，开箱即用。
+**parrots**实现了语音识别和语音合成模型一键调用，开箱即用，支持中英文。
 
-
-
-**Guide**
-
-- [Feature](#Feature)
-- [Install](#install)
-- [Usage](#usage)
-- [Dataset](#Dataset)
-- [Contact](#Contact)
-- [Reference](#reference)
-
-
-## Feature
+## Features
 1. ASR：基于 Tensorflow2 实现的中文语音识别（ASR）模型
 2. TTS：基于中文语音库的语音合成（TTS）模型
 
 ## Install
 ```shell
 brew install portaudio # for mac
+pip install -r requirements.txt
 pip install parrots
 ```
 or

@@ -8,7 +8,7 @@
 
 -----------------
 
-# Parrots: Chinese ASR and TTS toolkit
+# Parrots: ASR and TTS toolkit
 [![PyPI version](https://badge.fury.io/py/parrots.svg)](https://badge.fury.io/py/parrots)
 [![Downloads](https://static.pepy.tech/badge/parrots)](https://pepy.tech/project/parrots)
 [![Contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg)](CONTRIBUTING.md)
@@ -19,25 +19,13 @@
 [![Wechat Group](https://img.shields.io/badge/wechat-group-green.svg?logo=wechat)](#Contact)
 
 ## Introduction
-Parrots, Chinese Automatic Speech Recognition(**ASR**), Text-To-Speech(**TTS**) engine.
+Parrots, Automatic Speech Recognition(**ASR**), Text-To-Speech(**TTS**) toolkit, support Chinese, English, Japanese, etc.
 
-**parrots**实现了中文语音识别和语音合成模型，开箱即用。
+**parrots**实现了语音识别和语音合成模型一键调用，开箱即用，支持中英文。
 
-
-
-**Guide**
-
-- [Feature](#Feature)
-- [Install](#install)
-- [Usage](#usage)
-- [Dataset](#Dataset)
-- [Contact](#Contact)
-- [Reference](#reference)
-
-
-## Feature
-1. ASR：基于 Tensorflow2 实现的中文语音识别（ASR）模型
-2. TTS：基于中文语音库的语音合成（TTS）模型
+## Features
+1. ASR：基于`distilwhisper`实现的中文语音识别（ASR）模型，支持中、英等多种语言
+2. TTS：基于`GPT-SoVITS`训练的语音合成（TTS）模型，支持中、英、日等多种语言
 
 ## Install
 ```shell
@@ -62,7 +50,7 @@ import os
 import sys
 
 sys.path.append('..')
-from parrots import SpeechRecognition, Pinyin2Hanzi
+from parrots import SpeechRecognition
 
 pwd_path = os.path.abspath(os.path.dirname(__file__))
 
@@ -103,18 +91,7 @@ output:
 ## Dataset
 
 ## 语音库
-从SourceForge下载语音库[`syllables.zip`](https://sourceforge.net/projects/hantts/files/?source=navbar)，并解压到`parrots/data`目录下
-
-```shell
-wget https://sourceforge.net/projects/hantts/files/syllables.zip --no-check-certificate
-```
-
-## 录制新的语音库
-- 按阴平、阳平、上声、去声、轻声的顺序录下 mapping.json 里每一个音节的五个声调
-- 按开头字母(letter)分组, 将文件存在 ./recording/{letter}.wav下
-- 运行 `python parrots.custom_syllables.py {letter}` 将{letter}.wav 完整的录音分成独立的拼音
-- 检查核对`./pre`文件夹中的拼音.wav后导入文件夹`./syllables`
-
+从SourceForge下载语音库[`syllables.zip`](https://sourceforge.net/projects/hantts/files/?source=navbar)
 ## Contact
 
 - Issue(建议)：[![GitHub issues](https://img.shields.io/github/issues/shibing624/parrots.svg)](https://github.com/shibing624/parrots/issues)

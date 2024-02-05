@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "parrots"
+version = "1.0.1"
+description = "ASR and TTS toolkit"
+authors = ["shibing624 <shibing624@126.com>"]
+license = "The Apache License 2.0"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+transformers = "^4.37.2"
+pypinyin = "^0.50.0"
+jieba = "^0.42.1"
+loguru = "^0.7.2"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
