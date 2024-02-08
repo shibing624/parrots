@@ -390,6 +390,10 @@ def save_wav(wav_data, filename, sample_rate=16000):
         wf.writeframes(wav_data)
 
 
+class TextToSpeech:
+    pass
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Server for TTS API")
 
