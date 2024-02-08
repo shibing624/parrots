@@ -6,7 +6,6 @@
 import argparse
 import re
 import sys
-from io import BytesIO
 from typing import Dict, Any
 
 import ffmpeg
@@ -415,12 +414,12 @@ if __name__ == "__main__":
     audio_data = next(audio_stream)
     sampling_rate = hps.data.sampling_rate
 
-    # 保存为WAV文件
+    # 确保 audio_data 是二维的，形状为 (N, 1) 对于单声道
+    if audio_data.ndim == 1:
+        audio_data = audio_data.reshape(-1, 1)
+
+    # 直接保存为WAV文件
     output_wav_path = 'output.wav'
-    wav = BytesIO()
-    # 将音频数据写入到wav对象
-    sf.write(wav, audio_data, sampling_rate, format="WAV")
-    wav.seek(0)
-    with open(output_wav_path, 'wb') as f:
-        f.write(wav.read())
+    sf.write(output_wav_path, audio_data, sampling_rate, format="WAV")
+
     logger.info(f"Saved to {output_wav_path}")
