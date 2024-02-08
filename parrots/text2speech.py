@@ -382,13 +382,24 @@ def pcm16_header(rate, size=1000000000, channels=1):
     return header_data + struct.pack("<I", size)
 
 
-def save_wav(wav_data, filename, sample_rate=48000):
+def save_wav(wav_data, filename, sample_rate=16000):
     with wave.open(filename, 'wb') as wf:
-        wf.setnchannels(1)  # 单声道
-        wf.setsampwidth(4)  # 32位样本，因此采样宽度为2字节
-        wf.setframerate(sample_rate)  # 设置采样率
-        wf.writeframes(wav_data)
+        nchannels = 1  # Assuming mono audio
+        sampwidth = 4  # 32-bit audio
+        framerate = sample_rate
+        nframes = len(wav_data)
+        comptype = "NONE"
+        compname = "not compressed"
 
+        wf.setparams((nchannels, sampwidth, framerate, nframes, comptype, compname))
+
+        # Since we're saving as 32-bit PCM format, ensure the data is in 32-bit floating point
+        if wav_data.dtype != np.float32:
+            # Assuming the wav_data is 16-bit PCM, let's convert it to 32-bit floating point PCM
+            int16_max = float(np.iinfo(np.int16).max)
+            wav_data = wav_data.astype(np.float32) / int16_max
+
+        wf.writeframes(wav_data.tobytes())
 
 class TextToSpeech:
     pass
