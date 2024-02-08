@@ -21,7 +21,7 @@ sys.path.append('..')
 from parrots import cnhubert
 from parrots.mel_processing import spectrogram_torch
 from parrots.synthesizer_model import SynthesizerModel
-from parrots.t2s_model import Text2SemanticDecoder
+from parrots.t2s_module import Text2SemanticLightningModule
 from parrots.text_utils import clean_text, cleaned_text_to_sequence
 
 model_mappings: Dict[str, Any] = {}
@@ -343,10 +343,9 @@ def load_models():
     dict_s1 = torch.load(args.gpt, map_location="cpu")
     config = dict_s1["config"]
     logger.info(f"config: {config}")
-    logger.error(f"dict_s1: {dict_s1}")
-    # t2s_model = Text2SemanticLightningModule(config, "ojbk", is_train=False)
-    t2s_model = Text2SemanticDecoder(config=config, top_k=3)
-    t2s_model.load_state_dict(dict_s1["weight"]["model"])
+    logger.error(f"dict_s1 keys: {list(dict_s1.keys())}")
+    t2s_model = Text2SemanticLightningModule(config, "****", is_train=False)
+    t2s_model.load_state_dict(dict_s1["weight"])
     logger.error(f"t2s_model: {t2s_model}")
     t2s_model = to_device(t2s_model)
     t2s_model.eval()
