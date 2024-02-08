@@ -8,3 +8,4 @@ cn2an
 zh-normalization
 einops
 ffmpeg
+soundfile
