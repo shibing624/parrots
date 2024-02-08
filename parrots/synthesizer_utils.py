@@ -2632,7 +2632,7 @@ class MrteWN(torch.nn.Module):
         for i in range(self.n_layers):
             x_in = self.in_layers[i](x)
 
-            acts = fused_add_tanh_sigmoid_multiply(x_in, n_channels_tensor)
+            acts = mrte_fused_add_tanh_sigmoid_multiply(x_in, n_channels_tensor)
 
             res_skip_acts = self.res_skip_layers[i](acts)
             if i < self.n_layers - 1:
@@ -2651,7 +2651,7 @@ class MrteWN(torch.nn.Module):
 
 
 @torch.jit.script
-def fused_add_tanh_sigmoid_multiply(input, n_channels):
+def mrte_fused_add_tanh_sigmoid_multiply(input, n_channels):
     n_channels_int = n_channels[0]
     t_act = torch.tanh(input[:, :n_channels_int, :])
     s_act = torch.sigmoid(input[:, n_channels_int:, :])
