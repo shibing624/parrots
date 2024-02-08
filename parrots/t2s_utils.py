@@ -30,6 +30,7 @@ from torch.nn import functional as F
 from torch.nn.init import constant_, xavier_normal_, xavier_uniform_
 from torch.nn.modules.linear import NonDynamicallyQuantizableLinear
 from torch.nn.parameter import Parameter
+from parrots.patched_mha_with_cache import multi_head_attention_forward_patched
 
 _shape_t = Union[int, List[int], torch.Size]
 
@@ -47,6 +48,8 @@ def BalancedDoubleSwish(
         balancer,
         DoubleSwish(),
     )
+
+F.multi_head_attention_forward = multi_head_attention_forward_patched
 
 
 # modified from https://github.com/lifeiteng/vall-e/blob/main/valle/modules/activation.py
@@ -646,9 +649,6 @@ class TransformerEncoderLayer(nn.Module):
     ) -> None:
         factory_kwargs = {"device": device, "dtype": dtype}
         super(TransformerEncoderLayer, self).__init__()
-        # print(233333333333,d_model,nhead)
-        # import os
-        # os._exit(2333333)
         self.self_attn = MultiheadAttention(
             d_model,  # 512 16
             nhead,
