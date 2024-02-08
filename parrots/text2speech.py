@@ -173,8 +173,7 @@ def inference(ref_wav_path, prompt_text, prompt_language, text, text_language):
         t2s = model_mappings["t2s"]
         t2s_model, t2s_topk, t2s_max_sec = t2s["model"], t2s["top_k"], t2s["max_sec"]
         with torch.no_grad():
-            # pred_semantic, idx = t2s_model.model.infer_panel(
-            pred_semantic, idx = t2s_model.infer_panel(
+            pred_semantic, idx = t2s_model.model.infer_panel(
                 all_phoneme_ids,
                 all_phoneme_len,
                 prompt,
