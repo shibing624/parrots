@@ -382,10 +382,10 @@ def pcm16_header(rate, size=1000000000, channels=1):
     return header_data + struct.pack("<I", size)
 
 
-def save_wav(wav_data, filename, sample_rate=16000):
+def save_wav(wav_data, filename, sample_rate=48000):
     with wave.open(filename, 'wb') as wf:
         wf.setnchannels(1)  # 单声道
-        wf.setsampwidth(2)  # 16位样本，因此采样宽度为2字节
+        wf.setsampwidth(4)  # 32位样本，因此采样宽度为2字节
         wf.setframerate(sample_rate)  # 设置采样率
         wf.writeframes(wav_data)
 
@@ -456,5 +456,6 @@ if __name__ == "__main__":
     complete_audio = pcm_header + audio_data
 
     # 保存为WAV文件
-    output_wav_path = 'output_audio.wav'
+    output_wav_path = 'output_audio_32bit.wav'
     save_wav(complete_audio, output_wav_path)
+    logger.info(f"Saved to {output_wav_path}")
