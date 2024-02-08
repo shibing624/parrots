@@ -5,14 +5,14 @@
 """
 import argparse
 import re
-import struct
 import sys
-import wave
+from io import BytesIO
 from typing import Dict, Any
 
 import ffmpeg
 import librosa
 import numpy as np
+import soundfile as sf
 import torch
 from loguru import logger
 from transformers import AutoModelForMaskedLM, AutoTokenizer
@@ -108,9 +108,6 @@ def get_spepc(hps, filename):
 
 def inference(ref_wav_path, prompt_text, prompt_language, text, text_language):
     hps = model_mappings["hps"]
-
-    # 先返回PCM的头部，将音频长度设置成较大的值以便后面分块发送音频数据
-    yield pcm16_header(hps.data.sampling_rate)
 
     prompt_text = prompt_text.strip("\n")
     prompt_language, text = prompt_language, text.strip("\n")
@@ -357,50 +354,6 @@ def load_models():
     logger.info("Number of parameter: %.2fM" % (total / 1e6))
 
 
-def pcm16_header(rate, size=1000000000, channels=1):
-    # Header for 16-bit PCM, modify from scipy.io.wavfile.write
-    fs = rate
-    # size = data.nbytes  # length * sizeof(nint16)
-
-    header_data = b"RIFF"
-    header_data += struct.pack("i", size + 44)
-    header_data += b"WAVE"
-
-    # fmt chunk
-    header_data += b"fmt "
-    format_tag = 1  # PCM
-    bit_depth = 2 * 8  # 2 bytes
-    bytes_per_second = fs * (bit_depth // 8) * channels
-    block_align = channels * (bit_depth // 8)
-    fmt_chunk_data = struct.pack("<HHIIHH", format_tag, channels, fs, bytes_per_second, block_align, bit_depth)
-
-    header_data += struct.pack("<I", len(fmt_chunk_data))
-    header_data += fmt_chunk_data
-
-    header_data += b"data"
-
-    return header_data + struct.pack("<I", size)
-
-
-def save_wav(wav_data, filename, sample_rate=16000):
-    with wave.open(filename, 'wb') as wf:
-        nchannels = 1  # Assuming mono audio
-        sampwidth = 4  # 32-bit audio
-        framerate = sample_rate
-        nframes = len(wav_data)
-        comptype = "NONE"
-        compname = "not compressed"
-
-        wf.setparams((nchannels, sampwidth, framerate, nframes, comptype, compname))
-
-        # Since we're saving as 32-bit PCM format, ensure the data is in 32-bit floating point
-        if wav_data.dtype != np.float32:
-            # Assuming the wav_data is 16-bit PCM, let's convert it to 32-bit floating point PCM
-            int16_max = float(np.iinfo(np.int16).max)
-            wav_data = wav_data.astype(np.float32) / int16_max
-
-        wf.writeframes(wav_data.tobytes())
-
 class TextToSpeech:
     pass
 
@@ -459,14 +412,15 @@ if __name__ == "__main__":
     logger.info(params)
 
     audio_stream = inference(**params)
-    # 为了获取WAV文件的头部和音频数据
-    pcm_header = next(audio_stream)
-    audio_data = b''.join([audio_chunk for audio_chunk in audio_stream])
-
-    # 重新合并PCM头部和音频数据
-    complete_audio = pcm_header + audio_data
+    audio_data = next(audio_stream)
+    sampling_rate = hps.data.sampling_rate
 
     # 保存为WAV文件
-    output_wav_path = 'output_audio_32bit.wav'
-    save_wav(complete_audio, output_wav_path)
+    output_wav_path = 'output.wav'
+    wav = BytesIO()
+    # 将音频数据写入到wav对象
+    sf.write(wav, audio_data, sampling_rate, format="WAV")
+    wav.seek(0)
+    with open(output_wav_path, 'wb') as f:
+        f.write(wav.read())
     logger.info(f"Saved to {output_wav_path}")
