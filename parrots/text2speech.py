@@ -342,10 +342,8 @@ def load_models():
     dict_s1 = torch.load(args.gpt, map_location="cpu")
     config = dict_s1["config"]
     logger.info(f"config: {config}")
-    logger.error(f"dict_s1 keys: {list(dict_s1.keys())}")
     t2s_model = Text2SemanticLightningModule(config, "****", is_train=False)
     t2s_model.load_state_dict(dict_s1["weight"])
-    logger.error(f"t2s_model: {t2s_model}")
     t2s_model = to_device(t2s_model)
     t2s_model.eval()
     model_mappings["t2s"] = {
@@ -426,7 +424,7 @@ if __name__ == "__main__":
 
     parser.add_argument("--device", type=str, default="cuda", help="Device to run on")
     parser.add_argument("--half", action="store_true", help="Use half precision instead of float32")
-    parser.add_argument("--text", type=str, default="你好，欢迎来北京。welcome to beijing.", help="input text")
+    parser.add_argument("--text", type=str, default="你好，欢迎来北京。welcome to the city.", help="input text")
     parser.add_argument("--lang", type=str, default="zh", help="Language of the text, zh, en, jp")
     parser.add_argument("--ref_wav_path", type=str, default="../examples/ref.wav", help="reference wav")
     parser.add_argument("--ref_text", type=str,
