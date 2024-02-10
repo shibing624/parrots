@@ -47,7 +47,7 @@ class Pinyin2Hanzi:
                 # 否则不加入，然后直接将现有的拼音序列进行解码
                 str_decode = self.decode(str_tmp, 0.0000)
                 # print('decode ',str_tmp,str_decode)
-                if (str_decode != []):
+                if str_decode != []:
                     r += str_decode[0][0]
                 # 再重新从i+1开始作为第一个拼音
                 str_tmp = [list_syllable[i + 1]]

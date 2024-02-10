@@ -16,7 +16,7 @@ class Text2SemanticLightningModule(LightningModule):
         super().__init__()
         self.config = config
         self.top_k = 3
-        self.model = Text2SemanticDecoder(config=config, top_k=self.top_k)
+        self.model = Text2SemanticDecoder(config=config)
         pretrained_s1 = config.get("pretrained_s1")
         if pretrained_s1 and is_train:
             # print(self.load_state_dict(torch.load(pretrained_s1,map_location="cpu")["state_dict"]))

@@ -4,9 +4,9 @@
 @description: 
 """
 
-punctuation = ["!", "?", "…", ",", "."]  # @是SP停顿
+punctuation = ["!", "?", "…", ",", "."]
 punctuation.append("-")
-pu_symbols = punctuation + ["SP", "SP2", "SP3", "UNK"]
+pu_symbols = punctuation + ["SP", "SP2", "SP3", "UNK"] # SP停顿
 pad = "_"
 
 c = [
