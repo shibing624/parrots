@@ -68,6 +68,7 @@ output:
 
 ### TTS(Speech Synthesis)
 example: [examples/demo_tts.py](examples/demo_tts.py)
+
 ```python
 import sys
 
@@ -77,7 +78,7 @@ from parrots import TextToSpeech
 if __name__ == '__main__':
     m = TextToSpeech()
     # say text
-    m.inference('北京图书馆')
+    m.predict('北京图书馆')
 
     # generate wav file to path
     m.synthesize('北京图书馆', output_wav_path='./out.wav')

@@ -414,13 +414,24 @@ class TextToSpeech:
             bert = torch.zeros((1024, len(phones))).to(self.device)
         return bert
 
-    def inference(
+    @staticmethod
+    def audio_numpy_concat(segment_data_list, sr, speed=1.):
+        audio_segments = []
+        for segment_data in segment_data_list:
+            audio_segments += segment_data.reshape(-1).tolist()
+            audio_segments += [0] * int((sr * 0.05) / speed)
+        audio_segments = np.array(audio_segments).astype(np.float32)
+        return audio_segments
+
+    def predict(
             self,
-            ref_wav_path,
-            ref_prompt,
-            ref_language,
-            text,
+            ref_wav_path: str,
+            ref_prompt: str,
+            ref_language: Union[str, LANG],
+            text: str,
+            output_path: Optional[str] = None,
             text_language: Union[str, LANG] = "auto",
+            speed: float = 1.0,
     ):
         """
         Args:
@@ -428,7 +439,9 @@ class TextToSpeech:
             ref_prompt: str, reference prompt 参考音频对应的文本
             ref_language: str, language of the reference prompt 参考音频对应的文本的语种
             text: str, target text 要语音合成的文本
+            output_path: str, path to save the output wav file 保存语音合成结果的路径，可选
             text_language: str, language of the target text 要语音合成的文本的语种
+            speed: float, speed of speech 语速
         Returns:
             audio array: generator, audio stream, numpy array
         """
@@ -484,7 +497,7 @@ class TextToSpeech:
         bert1 = self.get_bert_final(phones1, word2ph1, norm_text1, ref_language).to(self.dtype)
 
         for text in texts:
-            if len(text.strip()) == 0:
+            if not text.strip():
                 continue
             if text[-1] not in sentence_split_symbols:
                 text += "。" if text_language != "en" else "."
@@ -525,8 +538,13 @@ class TextToSpeech:
             if max_audio > 1:
                 audio /= max_audio
             audio_list.append(audio)
-            audio_list.append(zero_wav)
-        yield (np.concatenate(audio_list, 0) * 32768).astype(np.int16)
+        audio_output = self.audio_numpy_concat(audio_list, sr=self.sampling_rate, speed=speed)
+        if output_path is None:
+            return audio_output
+        else:
+            soundfile.write(output_path, audio_output, self.sampling_rate)
+            logger.debug(f"Save audio to {output_path}")
+            return output_path
 
 
 if __name__ == "__main__":
@@ -566,6 +584,7 @@ if __name__ == "__main__":
                         default="大家好，我是宁宁。我中文还不是很熟练，但是希望大家能喜欢我的声音，喵喵喵！",
                         help="reference text")
     parser.add_argument("--ref_lang", type=str, default="zh", help="reference wav language")
+    parser.add_argument("--output_path", type=str, default="output_audio.wav", help="output wav")
     args = parser.parse_args()
     print(f"args: {args}")
     m = TextToSpeech(
@@ -576,12 +595,11 @@ if __name__ == "__main__":
         device=args.device,
         half=args.half
     )
-    audio_stream = m.inference(
+    m.predict(
         ref_wav_path=args.ref_wav_path,
         ref_prompt=args.ref_text,
         ref_language=args.ref_lang,
         text=args.text,
-        text_language=args.lang
+        text_language=args.lang,
+        output_path=args.output_path
     )
-    audio_array = next(audio_stream)
-    soundfile.write('output_audio.wav', audio_array, samplerate=m.sampling_rate)

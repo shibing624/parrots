@@ -6,13 +6,11 @@
 import argparse
 import sys
 
-import soundfile
-
 sys.path.append('..')
 from parrots.tts import TextToSpeech
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="TTS")
+    parser = argparse.ArgumentParser()
     parser.add_argument(
         "--bert",
         type=str,
@@ -48,6 +46,7 @@ if __name__ == "__main__":
                         default="大家好，我是宁宁。我中文还不是很熟练，但是希望大家能喜欢我的声音，喵喵喵！",
                         help="reference text")
     parser.add_argument("--ref_lang", type=str, default="zh", help="reference wav language")
+    parser.add_argument("--output_path", type=str, default="output_audio.wav", help="output wav")
     args = parser.parse_args()
     print(f"args: {args}")
     m = TextToSpeech(
@@ -58,14 +57,11 @@ if __name__ == "__main__":
         device=args.device,
         half=args.half
     )
-    audio_stream = m.inference(
+    m.predict(
         ref_wav_path=args.ref_wav_path,
         ref_prompt=args.ref_text,
         ref_language=args.ref_lang,
         text=args.text,
-        text_language=args.lang
+        text_language=args.lang,
+        output_path=args.output_path
     )
-    audio_array = next(audio_stream)
-    output_wav_path = 'output_audio.wav'
-    soundfile.write(output_wav_path, audio_array, samplerate=m.sampling_rate)
-    print(f"Saved to {output_wav_path}")
