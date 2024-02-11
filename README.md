@@ -69,30 +69,6 @@ output:
 ### TTS(Speech Synthesis)
 example: [examples/demo_tts.py](examples/demo_tts.py)
 
-```python
-import sys
-
-sys.path.append('..')
-from parrots import TextToSpeech
-
-if __name__ == '__main__':
-    m = TextToSpeech()
-    # say text
-    m.predict('北京图书馆')
-
-    # generate wav file to path
-    m.synthesize('北京图书馆', output_wav_path='./out.wav')
-```
-
-output:
-```
-北京图书馆
-```
-
-## Dataset
-
-## 语音库
-从SourceForge下载语音库[`syllables.zip`](https://sourceforge.net/projects/hantts/files/?source=navbar)
 ## Contact
 
 - Issue(建议)：[![GitHub issues](https://img.shields.io/github/issues/shibing624/parrots.svg)](https://github.com/shibing624/parrots/issues)
