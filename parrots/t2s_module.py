@@ -3,6 +3,7 @@
 @author:XuMing(xuming624@qq.com)
 @description: 
 """
+import os
 from typing import Dict
 
 import torch
@@ -12,7 +13,7 @@ from parrots.t2s_model import Text2SemanticDecoder
 
 
 class Text2SemanticLightningModule(LightningModule):
-    def __init__(self, config, output_dir, is_train=True):
+    def __init__(self, config, output_dir="outputs", is_train=True):
         super().__init__()
         self.config = config
         self.top_k = 3
@@ -28,8 +29,8 @@ class Text2SemanticLightningModule(LightningModule):
         if is_train:
             self.automatic_optimization = False
             self.save_hyperparameters()
-            self.eval_dir = output_dir / "eval"
-            self.eval_dir.mkdir(parents=True, exist_ok=True)
+            self.eval_dir = f"{output_dir}/eval"
+            os.makedirs(self.eval_dir, exist_ok=True)
 
     def training_step(self, batch: Dict, batch_idx: int):
         opt = self.optimizers()

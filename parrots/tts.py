@@ -24,7 +24,7 @@ sys.path.append('..')
 from parrots import cnhubert
 from parrots.mel_processing import spectrogram_torch
 from parrots.synthesizer_model import SynthesizerModel
-from parrots.t2s_model import Text2SemanticDecoder
+from parrots.t2s_module import Text2SemanticLightningModule
 from parrots.text_utils import clean_text, cleaned_text_to_sequence
 from parrots.symbols import sentence_split_symbols
 
@@ -303,9 +303,8 @@ class TextToSpeech:
         gpt_dict = torch.load(gpt_model_path, map_location="cpu")
         config = gpt_dict["config"]
         logger.debug(f"GPT config: {config}")
-        # t2s_model = Text2SemanticLightningModule(config, "****", is_train=False)
-        t2s_model = Text2SemanticDecoder(config)
-        t2s_model.load_state_dict(gpt_dict["weight"], strict=False)
+        t2s_model = Text2SemanticLightningModule(config, is_train=False)
+        t2s_model.load_state_dict(gpt_dict["weight"])
         t2s_model = self.to_device(t2s_model)
         t2s_model.eval()
         self.t2s_model = t2s_model
@@ -429,9 +428,9 @@ class TextToSpeech:
             ref_prompt: str,
             ref_language: Union[str, LANG],
             text: str,
-            output_path: Optional[str] = None,
             text_language: Union[str, LANG] = "auto",
             speed: float = 1.0,
+            output_path: Optional[str] = None,
     ):
         """
         Args:
@@ -439,9 +438,9 @@ class TextToSpeech:
             ref_prompt: str, reference prompt 参考音频对应的文本
             ref_language: str, language of the reference prompt 参考音频对应的文本的语种
             text: str, target text 要语音合成的文本
-            output_path: str, path to save the output wav file 保存语音合成结果的路径，可选
             text_language: str, language of the target text 要语音合成的文本的语种
             speed: float, speed of speech 语速
+            output_path: str, path to save the output wav file 保存语音合成结果的路径，可选
         Returns:
             audio array: generator, audio stream, numpy array
         """
@@ -513,7 +512,7 @@ class TextToSpeech:
 
             # step2
             with torch.no_grad():
-                pred_semantic, idx = self.t2s_model.infer_panel(
+                pred_semantic, idx = self.t2s_model.model.infer_panel(
                     all_phoneme_ids,
                     all_phoneme_len,
                     prompt,
