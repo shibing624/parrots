@@ -577,7 +577,7 @@ if __name__ == "__main__":
     parser.add_argument("--device", type=str, default="cuda", help="Device to run on")
     parser.add_argument("--half", action="store_true", help="Use half precision instead of float32")
     parser.add_argument("--text", type=str, default="你好，欢迎来北京。welcome to the city.", help="input text")
-    parser.add_argument("--lang", type=str, default="zh", help="Language of the text, zh, en, jp, auto")
+    parser.add_argument("--lang", type=str, default="auto", help="Language of the text, zh, en, jp, auto")
     parser.add_argument("--ref_wav_path", type=str, default="../examples/ref.wav", help="reference wav")
     parser.add_argument("--ref_text", type=str,
                         default="大家好，我是宁宁。我中文还不是很熟练，但是希望大家能喜欢我的声音，喵喵喵！",
