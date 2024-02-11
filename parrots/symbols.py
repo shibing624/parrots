@@ -3,9 +3,22 @@
 @author:XuMing(xuming624@qq.com)
 @description: 
 """
-
-punctuation = ["!", "?", "…", ",", "."]
-punctuation.append("-")
+sentence_split_symbols = {
+    "，",
+    "。",
+    "？",
+    "！",
+    ",",
+    ".",
+    "?",
+    "!",
+    "~",
+    ":",
+    "：",
+    "—",
+    "…",
+}
+punctuation = ["!", "?", "…", ",", ".", "-"]
 pu_symbols = punctuation + ["SP", "SP2", "SP3", "UNK"] # SP停顿
 pad = "_"
 

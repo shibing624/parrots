@@ -215,9 +215,9 @@ class Text2SemanticDecoder(nn.Module):
 
     def infer_panel(
             self,
-            x,  #####全部文本token
+            x,  # # 全部文本token
             x_lens,
-            prompts,  ####参考音频token
+            prompts,  # #参考音频token
             bert_feature,
             top_k: int = -100,
             early_stop_num: int = -1,
@@ -236,12 +236,12 @@ class Text2SemanticDecoder(nn.Module):
         # print(1111111,self.num_layers)
         cache = {
             "all_stage": self.num_layers,
-            "k": [None] * self.num_layers,  ###根据配置自己手写
+            "k": [None] * self.num_layers,  # 根据配置自己手写
             "v": [None] * self.num_layers,
-            # "xy_pos":None,##y_pos位置编码每次都不一样的没法缓存，每次都要重新拼xy_pos.主要还是写法原因，其实是可以历史统一一样的，但也没啥计算量就不管了
-            "y_emb": None,  ##只需要对最新的samples求emb，再拼历史的就行
-            # "logits":None,###原版就已经只对结尾求再拼接了，不用管
-            # "xy_dec":None,###不需要，本来只需要最后一个做logits
+            # "xy_pos":None,# y_pos位置编码每次都不一样的没法缓存，每次都要重新拼xy_pos.主要还是写法原因，其实是可以历史统一一样的，但也没啥计算量就不管了
+            "y_emb": None,  # 只需要对最新的samples求emb，再拼历史的就行
+            # "logits":None,# 原版就已经只对结尾求再拼接了，不用管
+            # "xy_dec":None,# 不需要，本来只需要最后一个做logits
             "first_infer": 1,
             "stage": 0,
         }
@@ -260,14 +260,14 @@ class Text2SemanticDecoder(nn.Module):
             else:
                 xy_pos = y_pos[:, -1:]
             y_len = y_pos.shape[1]
-            ###以下3个不做缓存
+            # 以下3个不做缓存
             if cache["first_infer"] == 1:
                 x_attn_mask_pad = F.pad(
                     x_attn_mask,
-                    (0, y_len),  ###xx的纯0扩展到xx纯0+xy纯1，(x,x+y)
+                    (0, y_len),  # xx的纯0扩展到xx纯0+xy纯1，(x,x+y)
                     value=True,
                 )
-                y_attn_mask = F.pad(  ###yy的右上1扩展到左边xy的0,(y,x+y)
+                y_attn_mask = F.pad(  # yy的右上1扩展到左边xy的0,(y,x+y)
                     torch.triu(torch.ones(y_len, y_len, dtype=torch.bool), diagonal=1),
                     (x_len, 0),
                     value=False,
@@ -276,23 +276,22 @@ class Text2SemanticDecoder(nn.Module):
                     y.device
                 )
             else:
-                ###最右边一列（是错的）
+                # 最右边一列（是错的）
                 # xy_attn_mask=torch.ones((1, x_len+y_len), dtype=torch.bool,device=xy_pos.device)
                 # xy_attn_mask[:,-1]=False
-                ###最下面一行（是对的）
+                # 最下面一行（是对的）
                 xy_attn_mask = torch.zeros(
                     (1, x_len + y_len), dtype=torch.bool, device=xy_pos.device
                 )
             # pdb.set_trace()
-            ###缓存重头戏
-            # print(1111,xy_pos.shape,xy_attn_mask.shape,x_len,y_len)
+            # 缓存重头戏
             xy_dec, _ = self.h((xy_pos, None), mask=xy_attn_mask, cache=cache)
             logits = self.ar_predict_layer(
                 xy_dec[:, -1]
-            )  ##不用改，如果用了cache的默认就是只有一帧，取最后一帧一样的
+            )  # 不用改，如果用了cache的默认就是只有一帧，取最后一帧一样的
             # samples = topk_sampling(logits, top_k=top_k, top_p=1.0, temperature=temperature)
-            if (idx == 0):  ###第一次跑不能EOS否则没有了
-                logits = logits[:, :-1]  ###刨除1024终止符号的概率
+            if (idx == 0):  #第一次跑不能EOS否则没有了
+                logits = logits[:, :-1]  # 刨除1024终止符号的概率
             samples = sample(
                 logits[0], y, top_k=top_k, top_p=1.0, repetition_penalty=1.35
             )[0].unsqueeze(0)

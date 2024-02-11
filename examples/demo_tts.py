@@ -3,15 +3,69 @@
 @author:XuMing(xuming624@qq.com)
 @description: 
 """
+import argparse
 import sys
 
+import soundfile
+
 sys.path.append('..')
-from parrots import TextToSpeech
+from parrots.tts import TextToSpeech
 
-if __name__ == '__main__':
-    m = TextToSpeech()
-    # say text
-    m.speak('北京图书馆')
-
-    # generate wav file to path
-    m.synthesize('北京图书馆', output_wav_path='./out.wav')
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="TTS")
+    parser.add_argument(
+        "--bert",
+        type=str,
+        default="pretrained_models/chinese-roberta-wwm-ext-large",
+        help="Path to the pretrained BERT model",
+    )
+    parser.add_argument(
+        "--hubert",
+        type=str,
+        default="pretrained_models/chinese-hubert-base",
+        help="Path to the pretrained HuBERT model",
+    )
+    parser.add_argument(
+        "--sovits",
+        type=str,
+        # default="pretrained_models/s2G488k.pth",
+        default="my_models/xiaowu_e12_s108.pth",
+        help="Path to the pretrained SoVITS",
+    )
+    parser.add_argument(
+        "--gpt",
+        type=str,
+        # default="pretrained_models/s1bert25hz-2kh-longer-epoch=68e-step=50232.ckpt",
+        default="my_models/xiaowu-e10.ckpt",
+        help="Path to the pretrained GPT",
+    )
+    parser.add_argument("--device", type=str, default="cuda", help="Device to run on")
+    parser.add_argument("--half", action="store_true", help="Use half precision instead of float32")
+    parser.add_argument("--text", type=str, default="你好，欢迎来北京。welcome to the city.", help="input text")
+    parser.add_argument("--lang", type=str, default="zh", help="Language of the text, zh, en, jp, auto")
+    parser.add_argument("--ref_wav_path", type=str, default="./ref.wav", help="reference wav")
+    parser.add_argument("--ref_text", type=str,
+                        default="大家好，我是宁宁。我中文还不是很熟练，但是希望大家能喜欢我的声音，喵喵喵！",
+                        help="reference text")
+    parser.add_argument("--ref_lang", type=str, default="zh", help="reference wav language")
+    args = parser.parse_args()
+    print(f"args: {args}")
+    m = TextToSpeech(
+        bert_model_path=args.bert,
+        hubert_model_path=args.hubert,
+        sovits_model_path=args.sovits,
+        gpt_model_path=args.gpt,
+        device=args.device,
+        half=args.half
+    )
+    audio_stream = m.inference(
+        ref_wav_path=args.ref_wav_path,
+        ref_prompt=args.ref_text,
+        ref_language=args.ref_lang,
+        text=args.text,
+        text_language=args.lang
+    )
+    audio_array = next(audio_stream)
+    output_wav_path = 'output_audio.wav'
+    soundfile.write(output_wav_path, audio_array, samplerate=m.sampling_rate)
+    print(f"Saved to {output_wav_path}")
