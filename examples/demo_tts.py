@@ -14,27 +14,25 @@ if __name__ == "__main__":
     parser.add_argument(
         "--bert",
         type=str,
-        default="pretrained_models/chinese-roberta-wwm-ext-large",
+        default="shibing624/parrots-chinese-roberta-wwm-ext-large",
         help="Path to the pretrained BERT model",
     )
     parser.add_argument(
         "--hubert",
         type=str,
-        default="pretrained_models/chinese-hubert-base",
+        default="shibing624/parrots-chinese-hubert-base",
         help="Path to the pretrained HuBERT model",
     )
     parser.add_argument(
         "--sovits",
         type=str,
-        # default="pretrained_models/s2G488k.pth",
-        default="my_models/xiaowu_e12_s108.pth",
+        default="pretrained_models/s2G488k.pth",
         help="Path to the pretrained SoVITS",
     )
     parser.add_argument(
         "--gpt",
         type=str,
-        # default="pretrained_models/s1bert25hz-2kh-longer-epoch=68e-step=50232.ckpt",
-        default="my_models/xiaowu-e10.ckpt",
+        default="pretrained_models/s1bert25hz-2kh-longer-epoch=68e-step=50232.ckpt",
         help="Path to the pretrained GPT",
     )
     parser.add_argument("--device", type=str, default="cuda", help="Device to run on")

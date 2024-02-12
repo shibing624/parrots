@@ -19,12 +19,13 @@ import soundfile
 import torch
 from loguru import logger
 from transformers import AutoModelForMaskedLM, AutoTokenizer
-
+from huggingface_hub import snapshot_download
 sys.path.append('..')
 from parrots import cnhubert
 from parrots.mel_processing import spectrogram_torch
 from parrots.synthesizer_model import SynthesizerModel
 from parrots.t2s_module import Text2SemanticLightningModule
+from parrots.t2s_model import Text2SemanticDecoder
 from parrots.text_utils import clean_text, cleaned_text_to_sequence
 from parrots.symbols import sentence_split_symbols
 
@@ -303,8 +304,13 @@ class TextToSpeech:
         gpt_dict = torch.load(gpt_model_path, map_location="cpu")
         config = gpt_dict["config"]
         logger.debug(f"GPT config: {config}")
-        t2s_model = Text2SemanticLightningModule(config, is_train=False)
-        t2s_model.load_state_dict(gpt_dict["weight"])
+        # t2s_model = Text2SemanticLightningModule(config, is_train=False)
+        # t2s_model.load_state_dict(gpt_dict["weight"])
+        t2s_model = Text2SemanticDecoder(config)
+        # 使用该函数调整你的模型权重字典的键
+        adjusted_state_dict = self.adjust_keys(gpt_dict["weight"])
+        # 然后使用调整后的状态字典加载模型
+        t2s_model.load_state_dict(adjusted_state_dict)
         t2s_model = self.to_device(t2s_model)
         t2s_model.eval()
         self.t2s_model = t2s_model
@@ -314,6 +320,20 @@ class TextToSpeech:
         logger.debug("Number of t2s model parameter: %.2fM" % (total / 1e6))
         # HuBERT
         self.ssl_model = self.to_device(cnhubert.get_model(hubert_model_path, self.sampling_rate))
+
+    @staticmethod
+    def adjust_keys(state_dict):
+        new_state_dict = {}
+        # 对于每一个在状态字典中的键和值
+        for k, v in state_dict.items():
+            # 如果键以"model."开始，就去掉这个前缀
+            if k.startswith("model."):
+                new_key = k[len("model."):]  # 删除前缀
+            else:
+                new_key = k
+            new_state_dict[new_key] = v  # 加入调整后的键值对到新字典
+        return new_state_dict
+
 
     def to_device(self, model):
         """A helper function to move a model to GPU or cpu"""
@@ -512,7 +532,7 @@ class TextToSpeech:
 
             # step2
             with torch.no_grad():
-                pred_semantic, idx = self.t2s_model.model.infer_panel(
+                pred_semantic, idx = self.t2s_model.infer_panel(
                     all_phoneme_ids,
                     all_phoneme_len,
                     prompt,
@@ -563,15 +583,13 @@ if __name__ == "__main__":
     parser.add_argument(
         "--sovits",
         type=str,
-        # default="pretrained_models/s2G488k.pth",
-        default="my_models/xiaowu_e12_s108.pth",
+        default="pretrained_models/s2G488k.pth",
         help="Path to the pretrained SoVITS",
     )
     parser.add_argument(
         "--gpt",
         type=str,
-        # default="pretrained_models/s1bert25hz-2kh-longer-epoch=68e-step=50232.ckpt",
-        default="my_models/xiaowu-e10.ckpt",
+        default="pretrained_models/s1bert25hz-2kh-longer-epoch=68e-step=50232.ckpt",
         help="Path to the pretrained GPT",
     )
     parser.add_argument("--device", type=str, default="cuda", help="Device to run on")
