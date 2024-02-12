@@ -36,7 +36,7 @@ CONFIG_NAME = "config.json"
 SOVITS_MODEL_NAME = "sovits.pth"
 GPT_MODEL_NAME = "gpt.ckpt"
 REF_WAV_NAME = "ref.wav"
-speaker_names = ["XingTong", "MaiMai", "XuanShen", "KusanagiNene", "LongShouRen", "KuileBlanc"]
+speaker_names = ["MaiMai", "XingTong", "XuanShen", "KusanagiNene", "LongShouRen", "KuileBlanc"]
 
 
 class LANG(Enum):
@@ -274,8 +274,8 @@ class TextToSpeech:
             hubert_model_path: str = "shibing624/parrots-chinese-hubert-base",
             sovits_model_path: str = None,
             gpt_model_path: str = None,
-            speaker_model_path: str = "shibing624/parrots-gpt-sovits-speaker",
-            speaker_name: Optional[str] = "XingTong",
+            speaker_model_path: str = "shibing624/parrots-gpt-sovits-speaker-maimai",
+            speaker_name: Optional[str] = "MaiMai",
             device: Optional[str] = None,
             half: Optional[bool] = False,
     ):
