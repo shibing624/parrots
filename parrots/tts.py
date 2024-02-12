@@ -4,6 +4,8 @@
 @description: 
 """
 import argparse
+import json
+import os
 import re
 import struct
 import sys
@@ -17,17 +19,24 @@ import librosa
 import numpy as np
 import soundfile
 import torch
+from huggingface_hub import snapshot_download
 from loguru import logger
 from transformers import AutoModelForMaskedLM, AutoTokenizer
-from huggingface_hub import snapshot_download
+
 sys.path.append('..')
 from parrots import cnhubert
 from parrots.mel_processing import spectrogram_torch
 from parrots.synthesizer_model import SynthesizerModel
-from parrots.t2s_module import Text2SemanticLightningModule
 from parrots.t2s_model import Text2SemanticDecoder
 from parrots.text_utils import clean_text, cleaned_text_to_sequence
 from parrots.symbols import sentence_split_symbols
+
+# Constants for speaker model
+CONFIG_NAME = "config.json"
+SOVITS_MODEL_NAME = "sovits.pth"
+GPT_MODEL_NAME = "gpt.ckpt"
+REF_WAV_NAME = "ref.wav"
+speaker_names = ["XingTong", "MaiMai", "XuanShen", "KusanagiNene", "LongShouRen", "KuileBlanc"]
 
 
 class LANG(Enum):
@@ -252,10 +261,12 @@ def sentence_split_by_length(input_text, max_len=50):
 class TextToSpeech:
     def __init__(
             self,
-            bert_model_path,
-            hubert_model_path,
-            sovits_model_path,
-            gpt_model_path,
+            bert_model_path: str = "shibing624/parrots-chinese-roberta-wwm-ext-large",
+            hubert_model_path: str = "shibing624/parrots-chinese-hubert-base",
+            sovits_model_path: str = None,
+            gpt_model_path: str = None,
+            speaker_model_path: str = "shibing624/parrots-gpt-sovits-speaker",
+            speaker_name: Optional[str] = "XingTong",
             device: Optional[str] = None,
             half: Optional[bool] = False,
     ):
@@ -263,8 +274,11 @@ class TextToSpeech:
         Args:
             bert_model_path: str, path to the pretrained BERT model
             hubert_model_path: str, path to the pretrained HuBERT model
-            sovits_model_path: str, path to the pretrained SoVITS
-            gpt_model_path: str, path to the pretrained GPT
+            sovits_model_path: str, path to the pretrained SoVITS, if None, use the speaker_model_path
+            gpt_model_path: str, path to the pretrained GPT, if None, use the speaker_model_path
+            speaker_model_path: str, path to the pretrained speaker model,
+                if sovits_model_path and gpt_model_path are None, use this model, else ignore this model
+            speaker_name: str, name of the speaker, default is "XingTong"
             device: str, device to run on, "cuda", "cpu" or "mps"
             half: bool, use half precision instead of float32
         """
@@ -283,6 +297,30 @@ class TextToSpeech:
         self.bert_tokenizer = AutoTokenizer.from_pretrained(bert_model_path)
         self.bert_model = AutoModelForMaskedLM.from_pretrained(bert_model_path)
         self.bert_model = self.to_device(self.bert_model)
+
+        if bool(sovits_model_path) != bool(gpt_model_path):  # Check if only one of them is provided
+            raise ValueError("sovits_model_path and gpt_model_path must be provided together")
+
+        if not sovits_model_path and not gpt_model_path and not speaker_model_path:
+            raise ValueError("sovits_model_path, gpt_model_path or speaker_model_path must be provided")
+
+        if speaker_model_path:
+            logger.info("Load pretrained parrots speaker: {}".format(speaker_model_path))
+            if os.path.exists(speaker_model_path):
+                # Load from path
+                model_path = speaker_model_path
+            else:
+                # Load from huggingface model hub
+                model_path = snapshot_download(speaker_model_path)
+            sovits_model_path = os.path.join(model_path, speaker_name, SOVITS_MODEL_NAME)
+            gpt_model_path = os.path.join(model_path, speaker_name, GPT_MODEL_NAME)
+            # Set ref_wav_path to the speaker's reference wav file
+            ref_config = json.loads(os.path.join(model_path, speaker_name, CONFIG_NAME))
+            self.ref_wav_path = os.path.join(model_path, speaker_name, REF_WAV_NAME)
+            self.ref_prompt = ref_config.get("reference_prompt", "")
+            self.ref_language = ref_config.get("reference_language", "")
+            logger.debug(f"Reference speaker character: {ref_config.get('character', '')}")
+
         # SoVITS
         sovits_dict = torch.load(sovits_model_path, map_location="cpu")
         hps = DictToAttrRecursive(sovits_dict["config"])
@@ -304,12 +342,9 @@ class TextToSpeech:
         gpt_dict = torch.load(gpt_model_path, map_location="cpu")
         config = gpt_dict["config"]
         logger.debug(f"GPT config: {config}")
-        # t2s_model = Text2SemanticLightningModule(config, is_train=False)
-        # t2s_model.load_state_dict(gpt_dict["weight"])
         t2s_model = Text2SemanticDecoder(config)
-        # 使用该函数调整你的模型权重字典的键
+        # Convert Text2SemanticLightningModule to Text2SemanticDecoder model
         adjusted_state_dict = self.adjust_keys(gpt_dict["weight"])
-        # 然后使用调整后的状态字典加载模型
         t2s_model.load_state_dict(adjusted_state_dict)
         t2s_model = self.to_device(t2s_model)
         t2s_model.eval()
@@ -333,7 +368,6 @@ class TextToSpeech:
                 new_key = k
             new_state_dict[new_key] = v  # 加入调整后的键值对到新字典
         return new_state_dict
-
 
     def to_device(self, model):
         """A helper function to move a model to GPU or cpu"""
@@ -374,17 +408,14 @@ class TextToSpeech:
                 textlist.append(tmp["text"])
         else:
             textlist, langlist = split_en_inf(text, language)
-        logger.debug(textlist)
-        logger.debug(langlist)
         bert_list = []
         for i in range(len(textlist)):
             text = textlist[i]
             lang = langlist[i]
             phones, word2ph, norm_text = clean_text_inf(text, lang)
-            bert = self.get_bert_inf(phones, word2ph, norm_text, lang)
-            bert_list.append(bert)
-        bert = torch.cat(bert_list, dim=1)
-        return bert
+            bert_inf = self.get_bert_inf(phones, word2ph, norm_text, lang)
+            bert_list.append(bert_inf)
+        return torch.cat(bert_list, dim=1)
 
     def nonen_clean_text_inf(self, text, language):
         if language == "auto":
@@ -401,13 +432,13 @@ class TextToSpeech:
         word2ph_list = []
         norm_text_list = []
         for i in range(len(textlist)):
+            text = textlist[i]
             lang = langlist[i]
-            phones, word2ph, norm_text = clean_text_inf(textlist[i], lang)
+            phones, word2ph, norm_text = clean_text_inf(text, lang)
             phones_list.append(phones)
             if lang == "zh":
                 word2ph_list.append(word2ph)
             norm_text_list.append(norm_text)
-        logger.debug(word2ph_list)
         phones = sum(phones_list, [])
         word2ph = sum(word2ph_list, [])
         norm_text = ' '.join(norm_text_list)
@@ -416,7 +447,7 @@ class TextToSpeech:
     def get_cleaned_text_final(self, text, language):
         if language in {"en", "zh", "ja"}:
             phones, word2ph, norm_text = clean_text_inf(text, language)
-        elif language in {"zh", "ja", "auto"}:
+        elif language in {"auto"}:
             phones, word2ph, norm_text = self.nonen_clean_text_inf(text, language)
         else:
             raise ValueError(f"Unsupported language: {language}")
@@ -425,7 +456,7 @@ class TextToSpeech:
     def get_bert_final(self, phones, word2ph, text, language):
         if language == "en":
             bert = self.get_bert_inf(phones, word2ph, text, language)
-        elif language == "auto":
+        elif language in {"ja", "auto"}:
             bert = self.nonen_get_bert_inf(text, language)
         elif language == "zh":
             bert = self.get_bert_feature(text, word2ph).to(self.device)
@@ -444,26 +475,32 @@ class TextToSpeech:
 
     def predict(
             self,
-            ref_wav_path: str,
-            ref_prompt: str,
-            ref_language: Union[str, LANG],
             text: str,
             text_language: Union[str, LANG] = "auto",
             speed: float = 1.0,
             output_path: Optional[str] = None,
+            ref_wav_path: str = None,
+            ref_prompt: str = None,
+            ref_language: Union[str, LANG] = None,
     ):
         """
         Args:
-            ref_wav_path: str, path to the reference wav file 参考音频文件
-            ref_prompt: str, reference prompt 参考音频对应的文本
-            ref_language: str, language of the reference prompt 参考音频对应的文本的语种
             text: str, target text 要语音合成的文本
             text_language: str, language of the target text 要语音合成的文本的语种
             speed: float, speed of speech 语速
             output_path: str, path to save the output wav file 保存语音合成结果的路径，可选
+            ref_wav_path: str, path to the reference wav file 参考音频文件
+            ref_prompt: str, reference prompt 参考音频对应的文本
+            ref_language: str, language of the reference prompt 参考音频对应的文本的语种
         Returns:
             audio array: generator, audio stream, numpy array
         """
+        if ref_wav_path is None:
+            ref_wav_path = self.ref_wav_path
+        if ref_prompt is None:
+            ref_prompt = self.ref_prompt
+        if ref_language is None:
+            ref_language = self.ref_language
 
         ref_language = LANG.from_string(ref_language) if isinstance(ref_language, str) else ref_language
         if ref_language not in list(LANG):
