@@ -3,6 +3,8 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 from tqdm import tqdm
+from loguru import logger
+
 
 from parrots.t2s_utils import (
     TransformerEncoder,
@@ -234,7 +236,6 @@ class Text2SemanticDecoder(nn.Module):
         x_len = x.shape[1]
         x_attn_mask = torch.zeros((x_len, x_len), dtype=torch.bool)
         stop = False
-        # print(1111111,self.num_layers)
         cache = {
             "all_stage": self.num_layers,
             "k": [None] * self.num_layers,  # 根据配置自己手写
@@ -246,7 +247,7 @@ class Text2SemanticDecoder(nn.Module):
             "first_infer": 1,
             "stage": 0,
         }
-        for idx in tqdm(range(1500)):
+        for idx in range(1500):
             if cache["first_infer"] == 1:
                 y_emb = self.ar_audio_embedding(y)
             else:
@@ -291,23 +292,22 @@ class Text2SemanticDecoder(nn.Module):
                 xy_dec[:, -1]
             )  # 不用改，如果用了cache的默认就是只有一帧，取最后一帧一样的
             # samples = topk_sampling(logits, top_k=top_k, top_p=1.0, temperature=temperature)
-            if idx == 0:  #第一次跑不能EOS否则没有了
+            if idx == 0:  # 第一次跑不能EOS否则没有了
                 logits = logits[:, :-1]  # 刨除1024终止符号的概率
             samples = sample(
                 logits[0], y, top_k=top_k, top_p=top_p, repetition_penalty=1.35, temperature=temperature
             )[0].unsqueeze(0)
             if early_stop_num != -1 and (y.shape[1] - prefix_len) > early_stop_num:
-                print("use early stop num:", early_stop_num)
+                logger.debug(f"use early stop num: {early_stop_num}")
                 stop = True
 
             if torch.argmax(logits, dim=-1)[0] == self.EOS or samples[0, 0] == self.EOS:
-                # print(torch.argmax(logits, dim=-1)[0] == self.EOS, samples[0, 0] == self.EOS)
                 stop = True
             if stop:
                 if prompts.shape[1] == y.shape[1]:
                     y = torch.concat([y, torch.zeros_like(samples)], dim=1)
-                    print("bad zero prediction")
-                print(f"T2S Decoding EOS [{prefix_len} -> {y.shape[1]}]")
+                    logger.debug("bad zero prediction")
+                logger.debug(f"T2S Decoding END, from {prefix_len} to {y.shape[1]}.")
                 break
             # 本次生成的 semantic_ids 和之前的 y 构成新的 y
             # print(samples.shape)#[1,1]#第一个1是bs
