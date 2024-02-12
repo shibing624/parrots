@@ -1,4 +1,3 @@
-import torch
 import torch.nn as nn
 from transformers import (
     Wav2Vec2FeatureExtractor,
@@ -25,9 +24,3 @@ def get_model(model_path, sampling_rate):
     model = CNHubert(model_path, sampling_rate)
     model.eval()
     return model
-
-
-def get_content(hmodel, wav_16k_tensor):
-    with torch.no_grad():
-        feats = hmodel(wav_16k_tensor)
-    return feats.transpose(1, 2)
