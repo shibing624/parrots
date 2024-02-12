@@ -10,7 +10,7 @@ with open('README.md', 'r', encoding='utf-8') as f:
 
 setup(
     name='parrots',
-    version='0.1.9',
+    version='0.2.0',
     description='Parrots, Automatic Speech Recognition(**ASR**), Text-To-Speech(**TTS**) toolkit',
     long_description=readme,
     long_description_content_type='text/markdown',
@@ -30,8 +30,20 @@ setup(
     ],
     platforms=["Windows", "Linux", "Solaris", "Mac OS-X", "Unix"],
     keywords='TTS,ASR,text to speech,speech',
-    install_requires=['pypinyin',
-                      'jieba'],
+    install_requires=[
+        'pypinyin',
+        'jieba',
+        'loguru',
+        'transformers',
+        'huggingface_hub',
+        'librosa',
+        'g2p_en',
+        'cn2an',
+        'zh-normalization',
+        'einops',
+        'LangSegment',
+        'soundfile'
+    ],
     packages=find_packages(exclude=['tests']),
     package_dir={'parrots': 'parrots'},
     package_data={

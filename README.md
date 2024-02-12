@@ -29,7 +29,7 @@ Parrots, Automatic Speech Recognition(**ASR**), Text-To-Speech(**TTS**) toolkit,
 
 ## Install
 ```shell
-brew install portaudio # for mac
+pip install -r requirements.txt
 pip install parrots
 ```
 or
@@ -68,6 +68,28 @@ output:
 
 ### TTS(Speech Synthesis)
 example: [examples/demo_tts.py](examples/demo_tts.py)
+```python
+import sys
+
+sys.path.append('..')
+from parrots import TextToSpeech
+m = TextToSpeech(
+    speaker_model_path="shibing624/parrots-gpt-sovits-speaker-maimai",
+    speaker_name="MaiMai",
+    device="cpu",
+    half=False
+)
+m.predict(
+    text="你好，欢迎来北京。welcome to the city.",
+    text_language="auto",
+    output_path="output_audio.wav"
+)
+```
+
+output:
+```
+Save audio to output_audio.wav
+```
 
 ## Contact
 
@@ -86,7 +108,7 @@ example: [examples/demo_tts.py](examples/demo_tts.py)
 @misc{parrots,
   title={parrots: ASR and TTS Tool},
   author={Ming Xu},
-  year={2022},
+  year={2024},
   howpublished={\url{https://github.com/shibing624/parrots}},
 }
 ```
@@ -115,3 +137,4 @@ example: [examples/demo_tts.py](examples/demo_tts.py)
 - [coqui-ai/TTS](https://github.com/coqui-ai/TTS)
 - [keonlee9420/Expressive-FastSpeech2](https://github.com/keonlee9420/Expressive-FastSpeech2)
 - [TensorSpeech/TensorflowTTS](https://github.com/TensorSpeech/TensorflowTTS)
+- [RVC-Boss/GPT-SoVITS](https://github.com/RVC-Boss/GPT-SoVITS)

@@ -7,7 +7,7 @@ import argparse
 import sys
 
 sys.path.append('..')
-from parrots.tts import TextToSpeech
+from parrots import TextToSpeech
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
