@@ -8,8 +8,6 @@
 
 -----------------
 
-**parrots**实现了中文语音识别和语音合成模型，开箱即用。
-
 # Parrots: ASR and TTS toolkit
 [![PyPI version](https://badge.fury.io/py/parrots.svg)](https://badge.fury.io/py/parrots)
 [![Downloads](https://static.pepy.tech/badge/parrots)](https://pepy.tech/project/parrots)
@@ -26,12 +24,11 @@ Parrots, Automatic Speech Recognition(**ASR**), Text-To-Speech(**TTS**) toolkit,
 **parrots**实现了语音识别和语音合成模型一键调用，开箱即用，支持中英文。
 
 ## Features
-1. ASR：基于 Tensorflow2 实现的中文语音识别（ASR）模型
-2. TTS：基于中文语音库的语音合成（TTS）模型
+1. ASR：基于`distilwhisper`实现的中文语音识别（ASR）模型，支持中、英等多种语言
+2. TTS：基于`GPT-SoVITS`训练的语音合成（TTS）模型，支持中、英、日等多种语言
 
 ## Install
 ```shell
-brew install portaudio # for mac
 pip install -r requirements.txt
 pip install parrots
 ```
@@ -43,6 +40,7 @@ python setup.py install
 ```
 
 ## Demo
+HF Demo: https://huggingface.co/spaces/shibing624/parrots
 Official Demo: https://www.mulanai.com/product/asr/
 
 ## Usage
@@ -53,7 +51,7 @@ import os
 import sys
 
 sys.path.append('..')
-from parrots import SpeechRecognition, Pinyin2Hanzi
+from parrots import SpeechRecognition
 
 pwd_path = os.path.abspath(os.path.dirname(__file__))
 
@@ -62,15 +60,11 @@ if __name__ == '__main__':
     r = m.recognize_speech_from_file(os.path.join(pwd_path, 'tushuguan.wav'))
     print('[提示] 语音识别结果：', r)
 
-    n = Pinyin2Hanzi()
-    text = n.pinyin_2_hanzi(r)
-    print('[提示] 语音转文字结果：', text)
-
 ```
 
 output:
 ```
-北京图书馆
+{'text': '北京图书馆'}
 ```
 
 ### TTS(Speech Synthesis)
@@ -80,35 +74,23 @@ import sys
 
 sys.path.append('..')
 from parrots import TextToSpeech
-
-if __name__ == '__main__':
-    m = TextToSpeech()
-    # say text
-    m.speak('北京图书馆')
-
-    # generate wav file to path
-    m.synthesize('北京图书馆', output_wav_path='./out.wav')
+m = TextToSpeech(
+    speaker_model_path="shibing624/parrots-gpt-sovits-speaker-maimai",
+    speaker_name="MaiMai",
+    device="cpu",
+    half=False
+)
+m.predict(
+    text="你好，欢迎来北京。welcome to the city.",
+    text_language="auto",
+    output_path="output_audio.wav"
+)
 ```
 
 output:
 ```
-北京图书馆
+Save audio to output_audio.wav
 ```
-
-## Dataset
-
-## 语音库
-从SourceForge下载语音库[`syllables.zip`](https://sourceforge.net/projects/hantts/files/?source=navbar)，并解压到`parrots/data`目录下
-
-```shell
-wget https://sourceforge.net/projects/hantts/files/syllables.zip --no-check-certificate
-```
-
-## 录制新的语音库
-- 按阴平、阳平、上声、去声、轻声的顺序录下 mapping.json 里每一个音节的五个声调
-- 按开头字母(letter)分组, 将文件存在 ./recording/{letter}.wav下
-- 运行 `python parrots.custom_syllables.py {letter}` 将{letter}.wav 完整的录音分成独立的拼音
-- 检查核对`./pre`文件夹中的拼音.wav后导入文件夹`./syllables`
 
 ## Contact
 
@@ -127,7 +109,7 @@ wget https://sourceforge.net/projects/hantts/files/syllables.zip --no-check-cert
 @misc{parrots,
   title={parrots: ASR and TTS Tool},
   author={Ming Xu},
-  year={2022},
+  year={2024},
   howpublished={\url{https://github.com/shibing624/parrots}},
 }
 ```
@@ -156,3 +138,4 @@ wget https://sourceforge.net/projects/hantts/files/syllables.zip --no-check-cert
 - [coqui-ai/TTS](https://github.com/coqui-ai/TTS)
 - [keonlee9420/Expressive-FastSpeech2](https://github.com/keonlee9420/Expressive-FastSpeech2)
 - [TensorSpeech/TensorflowTTS](https://github.com/TensorSpeech/TensorflowTTS)
+- [RVC-Boss/GPT-SoVITS](https://github.com/RVC-Boss/GPT-SoVITS)

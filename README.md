@@ -1,10 +1,15 @@
 [**🇨🇳中文**](https://github.com/shibing624/parrots/blob/master/README.md) | [**🌐English**](https://github.com/shibing624/parrots/blob/master/README_EN.md) | [**📖文档/Docs**](https://github.com/shibing624/parrots/wiki) | [**🤖模型/Models**](https://huggingface.co/shibing624) 
 
 <div align="center">
-  <a href="https://github.com/shibing624/parrots">
+    <a href="https://github.com/shibing624/parrots">
     <img src="https://github.com/shibing624/parrots/blob/master/docs/parrots_icon.png" alt="Logo" height="156">
-  </a>
+    </a>
+    <br/>
+    <a href="https://huggingface.co/spaces/shibing624/parrots" target="_blank"> Online Demo </a>
+    <br/>
+    <img width="70%" src="https://github.com/shibing624/parrots/blob/master/docs/screenshot.png">
 </div>
+
 
 -----------------
 
@@ -27,6 +32,8 @@ Parrots, Automatic Speech Recognition(**ASR**), Text-To-Speech(**TTS**) toolkit,
 1. ASR：基于`distilwhisper`实现的中文语音识别（ASR）模型，支持中、英等多种语言
 2. TTS：基于`GPT-SoVITS`训练的语音合成（TTS）模型，支持中、英、日等多种语言
 
+
+
 ## Install
 ```shell
 pip install -r requirements.txt
@@ -40,6 +47,7 @@ python setup.py install
 ```
 
 ## Demo
+HF Demo: https://huggingface.co/spaces/shibing624/parrots
 Official Demo: https://www.mulanai.com/product/asr/
 
 ## Usage

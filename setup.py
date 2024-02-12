@@ -37,6 +37,7 @@ setup(
         'transformers',
         'huggingface_hub',
         'librosa',
+        'nltk',
         'g2p_en',
         'cn2an',
         'zh-normalization',
