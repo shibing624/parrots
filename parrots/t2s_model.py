@@ -220,6 +220,7 @@ class Text2SemanticDecoder(nn.Module):
             prompts,  # #参考音频token
             bert_feature,
             top_k: int = -100,
+            top_p: int = 100,
             early_stop_num: int = -1,
             temperature: float = 1.0,
     ):
@@ -293,7 +294,7 @@ class Text2SemanticDecoder(nn.Module):
             if idx == 0:  #第一次跑不能EOS否则没有了
                 logits = logits[:, :-1]  # 刨除1024终止符号的概率
             samples = sample(
-                logits[0], y, top_k=top_k, top_p=1.0, repetition_penalty=1.35
+                logits[0], y, top_k=top_k, top_p=top_p, repetition_penalty=1.35, temperature=temperature
             )[0].unsqueeze(0)
             if early_stop_num != -1 and (y.shape[1] - prefix_len) > early_stop_num:
                 print("use early stop num:", early_stop_num)

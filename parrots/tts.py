@@ -199,6 +199,7 @@ def load_json_file(filepath):
         data = json.load(file)
     return data
 
+
 def merge_short_text_in_array(texts, threshold):
     if (len(texts)) < 2:
         return texts
@@ -424,9 +425,8 @@ class TextToSpeech:
             textlist, langlist = split_en_inf(text, language)
         bert_list = []
         for i in range(len(textlist)):
-            text = textlist[i]
             lang = langlist[i]
-            phones, word2ph, norm_text = clean_text_inf(text, lang)
+            phones, word2ph, norm_text = clean_text_inf(textlist[i], lang)
             bert_inf = self.get_bert_inf(phones, word2ph, norm_text, lang)
             bert_list.append(bert_inf)
         return torch.cat(bert_list, dim=1)
@@ -446,9 +446,8 @@ class TextToSpeech:
         word2ph_list = []
         norm_text_list = []
         for i in range(len(textlist)):
-            text = textlist[i]
             lang = langlist[i]
-            phones, word2ph, norm_text = clean_text_inf(text, lang)
+            phones, word2ph, norm_text = clean_text_inf(textlist[i], lang)
             phones_list.append(phones)
             if lang == "zh":
                 word2ph_list.append(word2ph)
@@ -496,9 +495,9 @@ class TextToSpeech:
             ref_wav_path: str = None,
             ref_prompt: str = None,
             ref_language: Union[str, LANG] = None,
-            top_k:int=20,
-            top_p:float=0.6,
-            temperature:float=0.6,
+            top_k: int = 20,
+            top_p: float = 0.6,
+            temperature: float = 0.6,
     ):
         """
         Args:
@@ -595,6 +594,8 @@ class TextToSpeech:
                     prompt,
                     bert,
                     top_k=top_k,
+                    top_p=top_p,
+                    temperature=temperature,
                     early_stop_num=50 * self.t2s_max_sec,
                 )
 
