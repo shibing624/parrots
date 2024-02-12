@@ -191,6 +191,14 @@ def save_wav(wav_data, filename, sample_rate=16000):
         wf.writeframes(wav_data)
 
 
+def load_json_file(filepath):
+    """
+    加载指定路径的JSON文件，并返回其内容。
+    """
+    with open(filepath, 'r') as file:
+        data = json.load(file)
+    return data
+
 def merge_short_text_in_array(texts, threshold):
     if (len(texts)) < 2:
         return texts
@@ -293,33 +301,38 @@ class TextToSpeech:
         logger.debug("Use device: {}".format(self.device))
         self.half = half
         self.dtype = torch.float16 if half else torch.float32
+
         # BERT
         self.bert_tokenizer = AutoTokenizer.from_pretrained(bert_model_path)
         self.bert_model = AutoModelForMaskedLM.from_pretrained(bert_model_path)
         self.bert_model = self.to_device(self.bert_model)
 
+        # Speaker
         if bool(sovits_model_path) != bool(gpt_model_path):  # Check if only one of them is provided
             raise ValueError("sovits_model_path and gpt_model_path must be provided together")
-
-        if not sovits_model_path and not gpt_model_path and not speaker_model_path:
+        if not sovits_model_path and not gpt_model_path:
+            if speaker_model_path:
+                logger.info("Load pretrained parrots speaker: {}".format(speaker_model_path))
+                if os.path.exists(speaker_model_path):
+                    # Load from path
+                    model_path = speaker_model_path
+                else:
+                    # Load from huggingface model hub
+                    model_path = snapshot_download(speaker_model_path)
+                sovits_model_path = os.path.join(model_path, speaker_name, SOVITS_MODEL_NAME)
+                gpt_model_path = os.path.join(model_path, speaker_name, GPT_MODEL_NAME)
+                # Set ref_wav_path to the speaker's reference wav file
+                config_file = os.path.join(model_path, speaker_name, CONFIG_NAME)
+                if os.path.exists(config_file):
+                    ref_config = load_json_file(config_file)
+                    logger.debug(f"Reference speaker config: {ref_config}, loaded from {config_file}")
+                    self.ref_wav_path = os.path.join(model_path, speaker_name, REF_WAV_NAME)
+                    self.ref_prompt = ref_config.get("reference_prompt", "")
+                    self.ref_language = ref_config.get("reference_language", "")
+                else:
+                    raise ValueError(f"Config file not found: {config_file}")
+        else:
             raise ValueError("sovits_model_path, gpt_model_path or speaker_model_path must be provided")
-
-        if speaker_model_path:
-            logger.info("Load pretrained parrots speaker: {}".format(speaker_model_path))
-            if os.path.exists(speaker_model_path):
-                # Load from path
-                model_path = speaker_model_path
-            else:
-                # Load from huggingface model hub
-                model_path = snapshot_download(speaker_model_path)
-            sovits_model_path = os.path.join(model_path, speaker_name, SOVITS_MODEL_NAME)
-            gpt_model_path = os.path.join(model_path, speaker_name, GPT_MODEL_NAME)
-            # Set ref_wav_path to the speaker's reference wav file
-            ref_config = json.loads(os.path.join(model_path, speaker_name, CONFIG_NAME))
-            self.ref_wav_path = os.path.join(model_path, speaker_name, REF_WAV_NAME)
-            self.ref_prompt = ref_config.get("reference_prompt", "")
-            self.ref_language = ref_config.get("reference_language", "")
-            logger.debug(f"Reference speaker character: {ref_config.get('character', '')}")
 
         # SoVITS
         sovits_dict = torch.load(sovits_model_path, map_location="cpu")
@@ -338,6 +351,7 @@ class TextToSpeech:
         vq_model.eval()
         vq_model.load_state_dict(sovits_dict["weight"], strict=False)
         self.vq_model = vq_model
+
         # GPT
         gpt_dict = torch.load(gpt_model_path, map_location="cpu")
         config = gpt_dict["config"]
@@ -349,10 +363,10 @@ class TextToSpeech:
         t2s_model = self.to_device(t2s_model)
         t2s_model.eval()
         self.t2s_model = t2s_model
-        self.t2s_top_k = config["inference"]["top_k"]
         self.t2s_max_sec = config["data"]["max_sec"]
         total = sum([param.nelement() for param in t2s_model.parameters()])
         logger.debug("Number of t2s model parameter: %.2fM" % (total / 1e6))
+
         # HuBERT
         self.ssl_model = self.to_device(cnhubert.get_model(hubert_model_path, self.sampling_rate))
 
@@ -482,6 +496,9 @@ class TextToSpeech:
             ref_wav_path: str = None,
             ref_prompt: str = None,
             ref_language: Union[str, LANG] = None,
+            top_k:int=20,
+            top_p:float=0.6,
+            temperature:float=0.6,
     ):
         """
         Args:
@@ -492,6 +509,9 @@ class TextToSpeech:
             ref_wav_path: str, path to the reference wav file 参考音频文件
             ref_prompt: str, reference prompt 参考音频对应的文本
             ref_language: str, language of the reference prompt 参考音频对应的文本的语种
+            top_k: int, top k
+            top_p: float, top p
+            temperature: float, temperature
         Returns:
             audio array: generator, audio stream, numpy array
         """
@@ -574,7 +594,7 @@ class TextToSpeech:
                     all_phoneme_len,
                     prompt,
                     bert,
-                    top_k=self.t2s_top_k,
+                    top_k=top_k,
                     early_stop_num=50 * self.t2s_max_sec,
                 )
 
