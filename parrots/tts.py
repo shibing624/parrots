@@ -311,7 +311,7 @@ class TextToSpeech:
         # Speaker
         if bool(sovits_model_path) != bool(gpt_model_path):  # Check if only one of them is provided
             raise ValueError("sovits_model_path and gpt_model_path must be provided together")
-        if not sovits_model_path and not gpt_model_path:
+        if sovits_model_path is None and gpt_model_path is None:
             if speaker_model_path:
                 logger.info("Load pretrained parrots speaker: {}".format(speaker_model_path))
                 if os.path.exists(speaker_model_path):
@@ -332,8 +332,8 @@ class TextToSpeech:
                     self.ref_language = ref_config.get("reference_language", "")
                 else:
                     raise ValueError(f"Config file not found: {config_file}")
-        else:
-            raise ValueError("sovits_model_path, gpt_model_path or speaker_model_path must be provided")
+            else:
+                raise ValueError("sovits_model_path, gpt_model_path or speaker_model_path must be provided")
 
         # SoVITS
         sovits_dict = torch.load(sovits_model_path, map_location="cpu")
