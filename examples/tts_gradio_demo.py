@@ -3,6 +3,7 @@
 @author:XuMing(xuming624@qq.com)
 @description: 
 """
+import hashlib
 import os
 import ssl
 
@@ -31,17 +32,24 @@ m.predict(
     text_language="auto",
     output_path="output_audio.wav"
 )
-assert os.path.exists("output_audio.wav")
+assert os.path.exists("output_audio.wav"), "output_audio.wav not found"
 
 
-def do_tts_wav_predict(text):
-    audio_array = m.predict(text, text_language="auto")
-    return audio_array
+def get_text_hash(text: str):
+    return hashlib.md5(text.encode('utf-8')).hexdigest()
+
+
+def do_tts_wav_predict(text: str, output_path: str = None):
+    if output_path is None:
+        output_path = f"output_audio_{get_text_hash(text)}.wav"
+    if not os.path.exists(output_path):
+        m.predict(text, text_language="auto", output_path=output_path)
+    return output_path
 
 
 with gr.Blocks(title="parrots WebUI") as app:
     gr.Markdown(value="""
-    # <center>在线语音生成（parrots）--speaker:主播卖卖\n
+    # <center>在线语音生成（parrots）speaker:主播卖卖\n
 
     ### <center>parrots项目：https://github.com/shibing624/parrots\n
     ### <center>数据集下载：https://huggingface.co/datasets/XzJosh/audiodataset\n
@@ -54,7 +62,7 @@ with gr.Blocks(title="parrots WebUI") as app:
     with gr.Group():
         gr.Markdown(value="*请填写需要语音合成的文本")
         with gr.Row():
-            text = gr.Textbox(label="需要合成的文本", value="", placeholder="请输入文本", lines=5)
+            text = gr.Textbox(label="需要合成的文本(建议100字以内)", value="", placeholder="请输入短文本", lines=3)
             inference_button = gr.Button("合成语音", variant="primary")
             output = gr.Audio(label="输出的语音")
         inference_button.click(

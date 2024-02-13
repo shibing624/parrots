@@ -25,6 +25,7 @@ from transformers import AutoModelForMaskedLM, AutoTokenizer
 
 sys.path.append('..')
 from parrots import cnhubert
+from parrots import utils # noqa
 from parrots.mel_processing import spectrogram_torch
 from parrots.synthesizer_model import SynthesizerModel
 from parrots.t2s_model import Text2SemanticDecoder
