@@ -5,9 +5,10 @@
     <img src="https://github.com/shibing624/parrots/blob/master/docs/parrots_icon.png" alt="Logo" height="156">
     </a>
     <br/>
+    <br/>
     <a href="https://huggingface.co/spaces/shibing624/parrots" target="_blank"> Online Demo </a>
     <br/>
-    <img width="70%" src="https://github.com/shibing624/parrots/blob/master/docs/hf.png">
+    <img width="100%" src="https://github.com/shibing624/parrots/blob/master/docs/hf.jpg">
 </div>
 
 
@@ -52,6 +53,8 @@ python setup.py install
 
 - Official Demo: https://www.mulanai.com/product/asr/
 - HuggingFace Demo: https://huggingface.co/spaces/shibing624/parrots
+
+<img width="85%" src="https://github.com/shibing624/parrots/blob/master/docs/hf.png">
 
 run example: [examples/tts_gradio_demo.py](https://github.com/shibing624/parrots/blob/master/examples/tts_gradio_demo.py) to see the demo:
 ```shell
