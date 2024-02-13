@@ -54,7 +54,7 @@ Official Demo: https://www.mulanai.com/product/asr/
 
 ## Usage
 ### ASR
-example: [examples/demo_asr.py](examples/demo_asr.py)
+example: [examples/demo_asr.py](https://github.com/shibing624/parrots/blob/master/examples/demo_asr.py)
 ```python
 import os
 import sys
@@ -77,7 +77,7 @@ output:
 ```
 
 ### TTS(Speech Synthesis)
-example: [examples/demo_tts.py](examples/demo_tts.py)
+example: [examples/demo_tts.py](https://github.com/shibing624/parrots/blob/master/examples/demo_tts.py)
 ```python
 import sys
 
@@ -100,6 +100,49 @@ output:
 ```
 Save audio to output_audio.wav
 ```
+
+
+### 命令行模式（CLI）
+
+支持通过命令行方式执行ARS和TTS任务，代码：[cli.py](https://github.com/shibing624/parrots/blob/master/parrots/cli.py)
+
+```
+> parrots -h                                    
+
+NAME
+    parrots
+
+SYNOPSIS
+    parrots COMMAND
+
+COMMANDS
+    COMMAND is one of the following:
+
+     asr
+       Entry point of asr, recognize speech from file
+
+     tts
+       Entry point of tts, generate speech audio from text
+
+```
+
+run：
+
+```shell
+pip install parrots -U
+# asr example
+parrots asr -h
+parrots asr examples/tushuguan.wav
+
+# tts example
+parrots tts -h
+parrots tts "你好，欢迎来北京。welcome to the city." output_audio.wav
+```
+
+- `asr`、`tts`是二级命令，asr是语音识别，tts是语音合成，默认使用的模型是中文模型
+- 各二级命令使用方法见`parrots asr -h`
+- 上面示例中`examples/tushuguan.wav`是`asr`方法的`audio_file_path`参数，输入的音频文件（required）
+
 
 ## Contact
 

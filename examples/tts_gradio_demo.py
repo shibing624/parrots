@@ -36,7 +36,7 @@ assert os.path.exists("output_audio.wav")
 
 def do_tts_wav_predict(text):
     audio_array = m.predict(text, text_language="auto")
-    yield audio_array
+    return audio_array
 
 
 with gr.Blocks(title="parrots WebUI") as app:
@@ -64,4 +64,4 @@ with gr.Blocks(title="parrots WebUI") as app:
         )
 
 app.queue(max_size=10)
-app.launch(inbrowser=True)
+app.launch(inbrowser=True, debug=True, show_api=True, share=True)

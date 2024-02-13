@@ -12,3 +12,4 @@ einops
 ffmpeg-python
 LangSegment
 soundfile
+fire

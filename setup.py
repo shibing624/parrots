@@ -10,7 +10,7 @@ with open('README.md', 'r', encoding='utf-8') as f:
 
 setup(
     name='parrots',
-    version='1.0.1',
+    version='1.0.2',
     description='Parrots, Automatic Speech Recognition(**ASR**), Text-To-Speech(**TTS**) toolkit',
     long_description=readme,
     long_description_content_type='text/markdown',
@@ -18,6 +18,9 @@ setup(
     author_email='xuming624@qq.com',
     url='https://github.com/shibing624/parrots',
     license="Apache 2.0",
+    zip_safe=False,
+    python_requires=">=3.6.0",
+    entry_points={"console_scripts": ["parrots = parrots.cli:main"]},
     classifiers=[
         'Intended Audience :: Developers',
         'Operating System :: OS Independent',
@@ -43,10 +46,10 @@ setup(
         'zh-normalization',
         'einops',
         'LangSegment',
-        'soundfile'
+        'soundfile',
+        'fire',
     ],
     packages=find_packages(exclude=['tests']),
     package_dir={'parrots': 'parrots'},
-    package_data={
-        'parrots': ['*.*', 'data/*', 'data/pinyin2hanzi/*']}
+    package_data={'parrots': ['*.*', 'data/*', 'data/pinyin2hanzi/*']}
 )
