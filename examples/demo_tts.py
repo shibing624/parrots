@@ -7,8 +7,11 @@ import argparse
 import sys
 
 sys.path.append('..')
+import parrots
 from parrots import TextToSpeech
-from parrots import utils  # noqa
+
+parrots_path = parrots.__path__[0]
+sys.path.append(parrots_path)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
