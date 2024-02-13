@@ -9,6 +9,6 @@ g2p_en
 cn2an
 zh-normalization
 einops
-ffmpeg
+ffmpeg-python
 LangSegment
 soundfile

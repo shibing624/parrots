@@ -31,6 +31,9 @@ from parrots.t2s_model import Text2SemanticDecoder
 from parrots.text_utils import clean_text, cleaned_text_to_sequence
 from parrots.symbols import sentence_split_symbols
 
+os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+os.environ["TOKENIZERS_PARALLELISM"] = "TRUE"
+
 # Constants for speaker model
 CONFIG_NAME = "config.json"
 SOVITS_MODEL_NAME = "sovits.pth"
@@ -338,7 +341,6 @@ class TextToSpeech:
         # SoVITS
         sovits_dict = torch.load(sovits_model_path, map_location="cpu")
         hps = DictToAttrRecursive(sovits_dict["config"])
-        hps.model.semantic_frame_rate = "25hz"
         logger.debug(f"SoVITS config: {hps}")
         vq_model = SynthesizerModel(
             spec_channels=hps.data.filter_length // 2 + 1,

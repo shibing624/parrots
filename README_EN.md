@@ -29,6 +29,7 @@ Parrots, Automatic Speech Recognition(**ASR**), Text-To-Speech(**TTS**) toolkit,
 
 ## Install
 ```shell
+pip install torch # or conda install pytorch
 pip install -r requirements.txt
 pip install parrots
 ```
@@ -36,6 +37,7 @@ or
 ```shell
 git clone https://github.com/shibing624/parrots.git
 cd parrots
+pip install torch # or conda install pytorch
 python setup.py install
 ```
 
