@@ -5,11 +5,6 @@ import torch
 from torch import Tensor
 from torch.nn.functional import (
     multi_head_attention_forward,
-    _none_or_dtype,
-    _mha_shape_check,
-    _canonical_mask,
-    _in_projection_packed,
-    _in_projection,
     pad,
     linear,
     softmax,
@@ -124,6 +119,17 @@ def multi_head_attention_forward_patched(
           :math:`S` is the source sequence length. If ``average_attn_weights=False``, returns attention weights per
           head of shape :math:`(num_heads, L, S)` when input is unbatched or :math:`(N, num_heads, L, S)`.
     """
+    try:
+        from torch.nn.functional import (
+            _none_or_dtype,
+            _mha_shape_check,
+            _canonical_mask,
+            _in_projection_packed,
+            _in_projection,
+        )
+    except ImportError:
+        print("ImportError, pip install torch>=2.2.0")
+        raise ImportError("pip install torch>=2.2.0")
     tens_ops = (
         query,
         key,
