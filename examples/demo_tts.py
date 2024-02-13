@@ -8,10 +8,12 @@ import sys
 
 sys.path.append('..')
 from parrots import TextToSpeech
+from parrots import utils  # noqa
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--speaker_model", type=str, default="shibing624/parrots-gpt-sovits-speaker-maimai", help="Model path")
+    parser.add_argument("--speaker_model", type=str, default="shibing624/parrots-gpt-sovits-speaker-maimai",
+                        help="Model path")
     parser.add_argument("--speaker_name", type=str, default="MaiMai", help="Name")
     parser.add_argument("--device", type=str, default="cuda", help="Device to run on")
     parser.add_argument("--half", action="store_true", help="Use half precision instead of float32")
