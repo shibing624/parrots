@@ -7,7 +7,7 @@
     <br/>
     <a href="https://huggingface.co/spaces/shibing624/parrots" target="_blank"> Online Demo </a>
     <br/>
-    <img width="70%" src="https://github.com/shibing624/parrots/blob/master/docs/screenshot.png">
+    <img width="70%" src="https://github.com/shibing624/parrots/blob/master/docs/hf.png">
 </div>
 
 
@@ -49,11 +49,17 @@ python setup.py install
 ```
 
 ## Demo
-HF Demo: https://huggingface.co/spaces/shibing624/parrots
-Official Demo: https://www.mulanai.com/product/asr/
+
+- Official Demo: https://www.mulanai.com/product/asr/
+- HuggingFace Demo: https://huggingface.co/spaces/shibing624/parrots
+
+run example: [examples/tts_gradio_demo.py](https://github.com/shibing624/parrots/blob/master/examples/tts_gradio_demo.py) to see the demo:
+```shell
+python examples/tts_gradio_demo.py
+```
 
 ## Usage
-### ASR
+### ASR(Speech Recognition)
 example: [examples/demo_asr.py](https://github.com/shibing624/parrots/blob/master/examples/demo_asr.py)
 ```python
 import os
@@ -182,7 +188,7 @@ parrots tts "你好，欢迎来北京。welcome to the city." output_audio.wav
 
 
 ## Reference
-#### ASR
+#### ASR(Speech Recognition)
 - [EAT: Enhanced ASR-TTS for Self-supervised Speech Recognition](https://arxiv.org/abs/2104.07474)
 - [PaddlePaddle/PaddleSpeech](https://github.com/PaddlePaddle/PaddleSpeech)
 - [NVIDIA/NeMo](https://github.com/NVIDIA/NeMo)
