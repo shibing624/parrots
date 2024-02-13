@@ -15,10 +15,11 @@ sys.path.append('..')
 from parrots.asr import SpeechRecognition
 from parrots.tts import TextToSpeech
 
+global speech_recognition_model
 speech_recognition_model = None
 
 
-def asr_func(audio_file_path: Union[np.ndarray, bytes, str], **kwargs):
+def asr_func(audio_file_path: Union[np.ndarray, bytes, str], output_path: str = None, **kwargs):
     """
     Compute ASR result from audio file.
     """
@@ -26,9 +27,15 @@ def asr_func(audio_file_path: Union[np.ndarray, bytes, str], **kwargs):
     if speech_recognition_model is None:
         speech_recognition_model = SpeechRecognition(**kwargs)
     r = speech_recognition_model.predict(audio_file_path)
-    logger.debug(f"ASR done, result: {r}")
+    res_text = r.get("text", "")
+    print(res_text, end='')  # Stdout
+    if output_path:
+        with open(output_path, "w") as f:
+            f.write(res_text)
+        logger.debug(f"ASR done, result saved: {output_path}")
 
 
+global text_to_speech_model
 text_to_speech_model = None
 
 
