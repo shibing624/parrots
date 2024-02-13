@@ -89,9 +89,12 @@ output:
 example: [examples/demo_tts.py](https://github.com/shibing624/parrots/blob/master/examples/demo_tts.py)
 ```python
 import sys
-
 sys.path.append('..')
+import parrots
 from parrots import TextToSpeech
+parrots_path = parrots.__path__[0]
+sys.path.append(parrots_path)
+
 m = TextToSpeech(
     speaker_model_path="shibing624/parrots-gpt-sovits-speaker-maimai",
     speaker_name="MaiMai",

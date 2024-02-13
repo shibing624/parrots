@@ -11,7 +11,7 @@ import parrots
 from parrots import TextToSpeech
 
 parrots_path = parrots.__path__[0]
-sys.path.append(parrots_path)
+sys.path.append(parrots_path)  # add parrots to sys.path
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
