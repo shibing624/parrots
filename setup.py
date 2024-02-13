@@ -10,7 +10,7 @@ with open('README.md', 'r', encoding='utf-8') as f:
 
 setup(
     name='parrots',
-    version='1.0.2',
+    version='1.0.3',
     description='Parrots, Automatic Speech Recognition(**ASR**), Text-To-Speech(**TTS**) toolkit',
     long_description=readme,
     long_description_content_type='text/markdown',
