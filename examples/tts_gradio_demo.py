@@ -6,6 +6,7 @@
 import hashlib
 import os
 import ssl
+import sys
 
 import gradio as gr
 import torch
@@ -15,7 +16,13 @@ ssl._create_default_https_context = ssl._create_unverified_context
 import nltk
 
 nltk.download('cmudict')
+
+sys.path.append('..')
+import parrots
 from parrots import TextToSpeech
+
+parrots_path = parrots.__path__[0]
+sys.path.append(parrots_path)  # add parrots to sys.path
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 logger.info(f"device: {device}")
@@ -71,5 +78,5 @@ with gr.Blocks(title="parrots WebUI") as app:
             [output],
         )
 
-app.queue(max_size=10)
+app.queue()
 app.launch(inbrowser=True, debug=True, show_api=True, share=True)
