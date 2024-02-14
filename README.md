@@ -51,7 +51,6 @@ python setup.py install
 
 ## Demo
 
-- Official Demo: https://www.mulanai.com/product/asr/
 - HuggingFace Demo: https://huggingface.co/spaces/shibing624/parrots
 
 <img width="85%" src="https://github.com/shibing624/parrots/blob/master/docs/hf.png">

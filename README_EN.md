@@ -1,10 +1,16 @@
 [**🇨🇳中文**](https://github.com/shibing624/parrots/blob/master/README.md) | [**🌐English**](https://github.com/shibing624/parrots/blob/master/README_EN.md) | [**📖文档/Docs**](https://github.com/shibing624/parrots/wiki) | [**🤖模型/Models**](https://huggingface.co/shibing624) 
 
 <div align="center">
-  <a href="https://github.com/shibing624/parrots">
+    <a href="https://github.com/shibing624/parrots">
     <img src="https://github.com/shibing624/parrots/blob/master/docs/parrots_icon.png" alt="Logo" height="156">
-  </a>
+    </a>
+    <br/>
+    <br/>
+    <a href="https://huggingface.co/spaces/shibing624/parrots" target="_blank"> Online Demo </a>
+    <br/>
+    <img width="100%" src="https://github.com/shibing624/parrots/blob/master/docs/hf.jpg">
 </div>
+
 
 -----------------
 
@@ -27,6 +33,8 @@ Parrots, Automatic Speech Recognition(**ASR**), Text-To-Speech(**TTS**) toolkit,
 1. ASR：基于`distilwhisper`实现的中文语音识别（ASR）模型，支持中、英等多种语言
 2. TTS：基于`GPT-SoVITS`训练的语音合成（TTS）模型，支持中、英、日等多种语言
 
+
+
 ## Install
 ```shell
 pip install torch # or conda install pytorch
@@ -35,19 +43,26 @@ pip install parrots
 ```
 or
 ```shell
+pip install torch # or conda install pytorch
 git clone https://github.com/shibing624/parrots.git
 cd parrots
-pip install torch # or conda install pytorch
 python setup.py install
 ```
 
 ## Demo
-HF Demo: https://huggingface.co/spaces/shibing624/parrots
-Official Demo: https://www.mulanai.com/product/asr/
+
+- HuggingFace Demo: https://huggingface.co/spaces/shibing624/parrots
+
+<img width="85%" src="https://github.com/shibing624/parrots/blob/master/docs/hf.png">
+
+run example: [examples/tts_gradio_demo.py](https://github.com/shibing624/parrots/blob/master/examples/tts_gradio_demo.py) to see the demo:
+```shell
+python examples/tts_gradio_demo.py
+```
 
 ## Usage
-### ASR
-example: [examples/demo_asr.py](examples/demo_asr.py)
+### ASR(Speech Recognition)
+example: [examples/demo_asr.py](https://github.com/shibing624/parrots/blob/master/examples/demo_asr.py)
 ```python
 import os
 import sys
@@ -70,12 +85,15 @@ output:
 ```
 
 ### TTS(Speech Synthesis)
-example: [examples/demo_tts.py](examples/demo_tts.py)
+example: [examples/demo_tts.py](https://github.com/shibing624/parrots/blob/master/examples/demo_tts.py)
 ```python
 import sys
-
 sys.path.append('..')
+import parrots
 from parrots import TextToSpeech
+parrots_path = parrots.__path__[0]
+sys.path.append(parrots_path)
+
 m = TextToSpeech(
     speaker_model_path="shibing624/parrots-gpt-sovits-speaker-maimai",
     speaker_name="MaiMai",
@@ -93,6 +111,49 @@ output:
 ```
 Save audio to output_audio.wav
 ```
+
+
+### 命令行模式（CLI）
+
+支持通过命令行方式执行ARS和TTS任务，代码：[cli.py](https://github.com/shibing624/parrots/blob/master/parrots/cli.py)
+
+```
+> parrots -h                                    
+
+NAME
+    parrots
+
+SYNOPSIS
+    parrots COMMAND
+
+COMMANDS
+    COMMAND is one of the following:
+
+     asr
+       Entry point of asr, recognize speech from file
+
+     tts
+       Entry point of tts, generate speech audio from text
+
+```
+
+run：
+
+```shell
+pip install parrots -U
+# asr example
+parrots asr -h
+parrots asr examples/tushuguan.wav
+
+# tts example
+parrots tts -h
+parrots tts "你好，欢迎来北京。welcome to the city." output_audio.wav
+```
+
+- `asr`、`tts`是二级命令，asr是语音识别，tts是语音合成，默认使用的模型是中文模型
+- 各二级命令使用方法见`parrots asr -h`
+- 上面示例中`examples/tushuguan.wav`是`asr`方法的`audio_file_path`参数，输入的音频文件（required）
+
 
 ## Contact
 
@@ -132,7 +193,7 @@ Save audio to output_audio.wav
 
 
 ## Reference
-#### ASR
+#### ASR(Speech Recognition)
 - [EAT: Enhanced ASR-TTS for Self-supervised Speech Recognition](https://arxiv.org/abs/2104.07474)
 - [PaddlePaddle/PaddleSpeech](https://github.com/PaddlePaddle/PaddleSpeech)
 - [NVIDIA/NeMo](https://github.com/NVIDIA/NeMo)
