@@ -97,8 +97,6 @@ sys.path.append(parrots_path)
 m = TextToSpeech(
     speaker_model_path="shibing624/parrots-gpt-sovits-speaker-maimai",
     speaker_name="MaiMai",
-    device="cpu",
-    half=False
 )
 m.predict(
     text="你好，欢迎来北京。welcome to the city.",
@@ -154,6 +152,28 @@ parrots tts "你好，欢迎来北京。welcome to the city." output_audio.wav
 - 各二级命令使用方法见`parrots asr -h`
 - 上面示例中`examples/tushuguan.wav`是`asr`方法的`audio_file_path`参数，输入的音频文件（required）
 
+## Release Models
+
+### ASR
+- [BELLE-2/Belle-distilwhisper-large-v2-zh](https://huggingface.co/BELLE-2/Belle-distilwhisper-large-v2-zh)
+### TTS
+
+- [shibing624/parrots-gpt-sovits-speaker](https://huggingface.co/shibing624/parrots-gpt-sovits-speaker)
+
+| speaker name | 说话人名 | character | 角色特点 | language | 语言 |
+|--|--|--|--|--|--|
+| KuileBlanc | 葵·勒布朗 | lady | 标准美式女声 | en | 英 |
+| LongShouRen | 龙守仁 | gentleman | 标准美式男声 | en | 英 |
+| MaiMai | 卖卖| singing female anchor | 唱歌女主播声 | zh | 中 |
+| XingTong | 星瞳 | singing ai girl | 活泼女声 | zh | 中 |
+| XuanShen | 炫神 | game male anchor | 游戏男主播声 | zh | 中 |
+| KusanagiNene | 草薙寧々 | loli | 萝莉女学生声 | ja | 日 |
+
+- [shibing624/parrots-gpt-sovits-speaker-maimai](https://huggingface.co/shibing624/parrots-gpt-sovits-speaker-maimai)
+
+| speaker name | 说话人名 | character | 角色特点 | language | 语言 |
+|--|--|--|--|--|--|
+| MaiMai | 卖卖| singing female anchor | 唱歌女主播声 | zh | 中 |
 
 ## Contact
 
