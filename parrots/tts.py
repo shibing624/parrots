@@ -298,7 +298,7 @@ class TextToSpeech:
             if torch.cuda.is_available():
                 device = "cuda"
             elif torch.backends.mps.is_available():
-                device = "mps"
+                device = "cpu"
             else:
                 device = "cpu"
         self.device = device
@@ -488,6 +488,7 @@ class TextToSpeech:
         audio_segments = np.array(audio_segments).astype(np.float32)
         return audio_segments
 
+    @torch.inference_mode()
     def predict(
             self,
             text: str,
@@ -543,23 +544,22 @@ class TextToSpeech:
             int(self.hps.data.sampling_rate * 0.3),
             dtype=np.float16 if self.half else np.float32,
         )
-        with torch.no_grad():
-            wav16k, sr = librosa.load(ref_wav_path, sr=16000)
-            if wav16k.shape[0] > 160000 or wav16k.shape[0] < 48000:
-                raise ValueError("参考音频需要是3~10秒范围内的，请更换！")
-            wav16k = torch.from_numpy(wav16k)
-            zero_wav_torch = torch.from_numpy(zero_wav)
-            if self.half:
-                wav16k = wav16k.half().to(self.device)
-                zero_wav_torch = zero_wav_torch.half().to(self.device)
-            else:
-                wav16k = wav16k.to(self.device)
-                zero_wav_torch = zero_wav_torch.to(self.device)
-            wav16k = torch.cat([wav16k, zero_wav_torch])
+        wav16k, sr = librosa.load(ref_wav_path, sr=16000)
+        if wav16k.shape[0] > 160000 or wav16k.shape[0] < 48000:
+            raise ValueError("参考音频需要是3~10秒范围内的，请更换！")
+        wav16k = torch.from_numpy(wav16k)
+        zero_wav_torch = torch.from_numpy(zero_wav)
+        if self.half:
+            wav16k = wav16k.half().to(self.device)
+            zero_wav_torch = zero_wav_torch.half().to(self.device)
+        else:
+            wav16k = wav16k.to(self.device)
+            zero_wav_torch = zero_wav_torch.to(self.device)
+        wav16k = torch.cat([wav16k, zero_wav_torch])
 
-            ssl_content = self.ssl_model.model(wav16k.unsqueeze(0))["last_hidden_state"].transpose(1, 2)
-            codes = self.vq_model.extract_latent(ssl_content)
-            prompt_semantic = codes[0, 0]
+        ssl_content = self.ssl_model.model(wav16k.unsqueeze(0))["last_hidden_state"].transpose(1, 2)
+        codes = self.vq_model.extract_latent(ssl_content)
+        prompt_semantic = codes[0, 0]
 
         # step1
         phones1, word2ph1, norm_text1 = self.get_cleaned_text_final(ref_prompt, ref_language)
@@ -589,17 +589,16 @@ class TextToSpeech:
             prompt = prompt_semantic.unsqueeze(0).to(self.device)
 
             # step2
-            with torch.no_grad():
-                pred_semantic, idx = self.t2s_model.infer_panel(
-                    all_phoneme_ids,
-                    all_phoneme_len,
-                    prompt,
-                    bert,
-                    top_k=top_k,
-                    top_p=top_p,
-                    temperature=temperature,
-                    early_stop_num=50 * self.t2s_max_sec,
-                )
+            pred_semantic, idx = self.t2s_model.infer_panel(
+                all_phoneme_ids,
+                all_phoneme_len,
+                prompt,
+                bert,
+                top_k=top_k,
+                top_p=top_p,
+                temperature=temperature,
+                early_stop_num=50 * self.t2s_max_sec,
+            )
 
             # step3
             pred_semantic = pred_semantic[:, -idx:].unsqueeze(0)
