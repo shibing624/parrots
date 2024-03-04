@@ -50,7 +50,7 @@ python setup.py install
 ```
 
 ## Demo
-
+- Offical Demo: https://www.mulanai.com/product/tts/
 - HuggingFace Demo: https://huggingface.co/spaces/shibing624/parrots
 
 <img width="85%" src="https://github.com/shibing624/parrots/blob/master/docs/hf.png">
