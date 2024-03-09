@@ -39,7 +39,7 @@ CONFIG_NAME = "config.json"
 SOVITS_MODEL_NAME = "sovits.pth"
 GPT_MODEL_NAME = "gpt.ckpt"
 REF_WAV_NAME = "ref.wav"
-speaker_names = ["MaiMai", "XingTong", "XuanShen", "KusanagiNene", "LongShouRen", "KuileBlanc"]
+SPEAKER_NAMES = ["MaiMai", "XingTong", "XuanShen", "KusanagiNene", "LongShouRen", "KuileBlanc"]
 
 
 class LANG(Enum):
@@ -289,8 +289,8 @@ class TextToSpeech:
             sovits_model_path: str, path to the pretrained SoVITS, if None, use the speaker_model_path
             gpt_model_path: str, path to the pretrained GPT, if None, use the speaker_model_path
             speaker_model_path: str, path to the pretrained speaker model,
-                if sovits_model_path and gpt_model_path are None, use this model, else ignore this model
-            speaker_name: str, name of the speaker, default is "XingTong"
+                if sovits_model_path and gpt_model_path are None, use this model, else ignore it
+            speaker_name: str, name of the speaker, default is "MaiMai"
             device: str, device to run on, "cuda", "cpu" or "mps"
             half: bool, use half precision instead of float32
         """
