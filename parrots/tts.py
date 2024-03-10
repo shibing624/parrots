@@ -198,7 +198,7 @@ def load_json_file(filepath):
     """
     加载指定路径的JSON文件，并返回其内容。
     """
-    with open(filepath, 'r') as file:
+    with open(filepath, 'r', encoding='utf-8') as file:
         data = json.load(file)
     return data
 
