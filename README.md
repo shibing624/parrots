@@ -90,7 +90,7 @@ example: [examples/demo_tts.py](https://github.com/shibing624/parrots/blob/maste
 import sys
 sys.path.append('..')
 import parrots
-from parrots import TextToSpeech
+from parrots.tts import TextToSpeech
 parrots_path = parrots.__path__[0]
 sys.path.append(parrots_path)
 

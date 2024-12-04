@@ -9,7 +9,7 @@ import sys
 import unittest
 
 sys.path.append('..')
-from parrots import TextToSpeech
+from parrots.tts import TextToSpeech
 
 
 class TestTTS(unittest.TestCase):

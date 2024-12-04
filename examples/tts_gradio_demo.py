@@ -19,7 +19,7 @@ nltk.download('cmudict')
 
 sys.path.append('..')
 import parrots
-from parrots import TextToSpeech
+from parrots.tts import TextToSpeech
 
 parrots_path = parrots.__path__[0]
 sys.path.append(parrots_path)  # add parrots to sys.path
