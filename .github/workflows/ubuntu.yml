@@ -15,28 +15,28 @@ jobs:
         python-version: [ 3.8 ]
     steps:
       - uses: actions/checkout@v4
-      - name: Cache pip
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Cache pip packages
         uses: actions/cache@v4
-        if: startsWith(runner.os, 'Linux')
+        id: pip-cache
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/requirements.txt') }}-torch-cython
           restore-keys: |
+            ${{ runner.os }}-pip-${{ matrix.python-version }}-
             ${{ runner.os }}-pip-
       - name: Cache huggingface models
         uses: actions/cache@v4
         with:
           path: ~/.cache/huggingface
           key: ${{ runner.os }}-huggingface-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-      - name: Install torch
+      - name: Install torch and Cython
         run: |
           python -m pip install --upgrade pip
-          pip install Cython
-          pip install torch
+          pip install Cython torch
       - name: Install from pypi
         run: |
           pip install -U parrots
