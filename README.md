@@ -30,8 +30,10 @@ Parrots, Automatic Speech Recognition(**ASR**), Text-To-Speech(**TTS**) toolkit,
 **parrots**实现了语音识别和语音合成模型一键调用，开箱即用，支持中英文。
 
 ## Features
-1. ASR：基于`distilwhisper`实现的中文语音识别（ASR）模型，支持中、英等多种语言
-2. TTS：基于`GPT-SoVITS`训练的语音合成（TTS）模型，支持中、英、日等多种语言
+1. **ASR**：基于`distilwhisper`实现的中文语音识别（ASR）模型，支持中、英等多种语言
+2. **TTS**：基于`GPT-SoVITS`训练的语音合成（TTS）模型，支持中、英、日等多种语言
+3. **流式TTS**：支持流式语音合成，实现低延迟的实时语音输出
+
 
 
 
@@ -85,22 +87,24 @@ output:
 ```
 
 ### TTS(Speech Synthesis)
+
+#### 基础用法
 example: [examples/demo_tts.py](https://github.com/shibing624/parrots/blob/master/examples/demo_tts.py)
 ```python
-import sys
-sys.path.append('..')
-import parrots
-from parrots.tts import TextToSpeech
-parrots_path = parrots.__path__[0]
-sys.path.append(parrots_path)
+from parrots import TextToSpeech
 
+# 初始化 TTS 模型（无需手动配置路径）
 m = TextToSpeech(
     speaker_model_path="shibing624/parrots-gpt-sovits-speaker-maimai",
     speaker_name="MaiMai",
+    device="cpu",  # 或 "cuda" 使用 GPU
+    half=False     # 设置为 True 使用半精度加速
 )
+
+# 生成语音
 m.predict(
-    text="你好，欢迎来北京。welcome to the city.",
-    text_language="auto",
+    text="你好，欢迎来到北京。这是一个合成录音文件的演示。Welcome to Beijing!",
+    text_language="auto",  # 自动检测语言，也可指定 "zh", "en", "ja"
     output_path="output_audio.wav"
 )
 ```
@@ -108,6 +112,60 @@ m.predict(
 output:
 ```
 Save audio to output_audio.wav
+```
+
+#### 流式 TTS（低延迟）
+
+支持流式语音合成，适用于实时对话场景：
+
+```python
+from parrots import TextToSpeech
+import soundfile as sf
+import numpy as np
+
+m = TextToSpeech(
+    speaker_model_path="shibing624/parrots-gpt-sovits-speaker-maimai",
+    speaker_name="MaiMai",
+)
+
+# 流式生成语音
+audio_chunks = []
+for audio_chunk in m.predict_stream(
+    text="这是一段较长的文本，将会被流式合成为语音。",
+    text_language="zh",
+    stream_chunk_size=20  # 控制延迟，越小延迟越低
+):
+    audio_chunks.append(audio_chunk)
+    # 这里可以实时播放 audio_chunk
+
+# 保存完整音频
+full_audio = np.concatenate(audio_chunks)
+sf.write("streaming_output.wav", full_audio, m.sampling_rate)
+```
+
+#### 日志管理
+
+控制日志输出级别：
+
+```python
+from parrots import TextToSpeech
+from parrots.log import set_log_level, logger
+
+# 设置日志级别
+set_log_level("INFO")  # 可选: DEBUG, INFO, WARNING, ERROR
+
+m = TextToSpeech(
+    speaker_model_path="shibing624/parrots-gpt-sovits-speaker-maimai",
+    speaker_name="MaiMai",
+)
+
+# 使用 logger
+logger.info("开始语音合成...")
+m.predict(
+    text="你好，世界！",
+    text_language="zh",
+    output_path="output.wav"
+)
 ```
 
 
@@ -174,6 +232,23 @@ parrots tts "你好，欢迎来北京。welcome to the city." output_audio.wav
 | speaker name | 说话人名 | character | 角色特点 | language | 语言 |
 |--|--|--|--|--|--|
 | MaiMai | 卖卖| singing female anchor | 唱歌女主播声 | zh | 中 |
+
+## 更新日志
+
+### v0.2.0 (2025-10)
+- ✨ 新增流式 TTS 功能，支持低延迟实时语音合成
+- ✨ 新增统一的日志管理系统（基于 loguru）
+- 🐛 修复 PyTorch 2.0+ 的 `weight_norm` 弃用警告
+- 🐛 修复 `torch.stft` 的 `return_complex=False` 弃用警告
+- 🐛 修复 librosa 的 `resample` 和 `time_stretch` 警告
+- 🔧 优化模型加载机制，无需手动添加 `sys.path`
+- 📝 完善文档和示例代码
+
+### v0.1.0 (2024-12)
+- 🎉 初始版本发布
+- ✨ 支持 ASR（语音识别）
+- ✨ 支持 TTS（语音合成）
+- ✨ 支持中、英、日多语言
 
 ## Contact
 

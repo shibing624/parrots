@@ -30,8 +30,10 @@ Parrots, Automatic Speech Recognition(**ASR**), Text-To-Speech(**TTS**) toolkit,
 **parrots**实现了语音识别和语音合成模型一键调用，开箱即用，支持中英文。
 
 ## Features
-1. ASR：基于`distilwhisper`实现的中文语音识别（ASR）模型，支持中、英等多种语言
-2. TTS：基于`GPT-SoVITS`训练的语音合成（TTS）模型，支持中、英、日等多种语言
+1. **ASR**: Automatic Speech Recognition based on `distilwhisper`, supporting Chinese, English, and other languages
+2. **TTS**: Text-to-Speech based on `GPT-SoVITS`, supporting Chinese, English, Japanese, and other languages
+3. **Streaming TTS**: Support for streaming speech synthesis with low latency for real-time audio output
+
 
 
 
@@ -85,24 +87,24 @@ output:
 ```
 
 ### TTS(Speech Synthesis)
+
+#### Basic Usage
 example: [examples/demo_tts.py](https://github.com/shibing624/parrots/blob/master/examples/demo_tts.py)
 ```python
-import sys
-sys.path.append('..')
-import parrots
 from parrots import TextToSpeech
-parrots_path = parrots.__path__[0]
-sys.path.append(parrots_path)
 
+# Initialize TTS model (no manual path configuration needed)
 m = TextToSpeech(
     speaker_model_path="shibing624/parrots-gpt-sovits-speaker-maimai",
     speaker_name="MaiMai",
-    device="cpu",
-    half=False
+    device="cpu",  # or "cuda" for GPU
+    half=False     # Set to True for half precision acceleration
 )
+
+# Generate speech
 m.predict(
-    text="你好，欢迎来北京。welcome to the city.",
-    text_language="auto",
+    text="Hello, welcome to Beijing. This is a demo of synthesized audio. Welcome to Beijing!",
+    text_language="auto",  # Auto-detect language, or specify "zh", "en", "ja"
     output_path="output_audio.wav"
 )
 ```
@@ -112,6 +114,59 @@ output:
 Save audio to output_audio.wav
 ```
 
+#### Streaming TTS (Low Latency)
+
+Support for streaming speech synthesis, suitable for real-time conversation scenarios:
+
+```python
+from parrots import TextToSpeech
+import soundfile as sf
+import numpy as np
+
+m = TextToSpeech(
+    speaker_model_path="shibing624/parrots-gpt-sovits-speaker-maimai",
+    speaker_name="MaiMai",
+)
+
+# Stream generate speech
+audio_chunks = []
+for audio_chunk in m.predict_stream(
+    text="This is a longer text that will be synthesized into speech in a streaming manner.",
+    text_language="en",
+    stream_chunk_size=20  # Control latency, smaller = lower latency
+):
+    audio_chunks.append(audio_chunk)
+    # You can play audio_chunk in real-time here
+
+# Save complete audio
+full_audio = np.concatenate(audio_chunks)
+sf.write("streaming_output.wav", full_audio, m.sampling_rate)
+```
+
+#### Log Management
+
+Control log output level:
+
+```python
+from parrots import TextToSpeech
+from parrots.log import set_log_level, logger
+
+# Set log level
+set_log_level("INFO")  # Options: DEBUG, INFO, WARNING, ERROR
+
+m = TextToSpeech(
+    speaker_model_path="shibing624/parrots-gpt-sovits-speaker-maimai",
+    speaker_name="MaiMai",
+)
+
+# Use logger
+logger.info("Starting speech synthesis...")
+m.predict(
+    text="Hello, world!",
+    text_language="en",
+    output_path="output.wav"
+)
+```
 
 ### 命令行模式（CLI）
 
@@ -202,3 +257,22 @@ parrots tts "你好，欢迎来北京。welcome to the city." output_audio.wav
 - [keonlee9420/Expressive-FastSpeech2](https://github.com/keonlee9420/Expressive-FastSpeech2)
 - [TensorSpeech/TensorflowTTS](https://github.com/TensorSpeech/TensorflowTTS)
 - [RVC-Boss/GPT-SoVITS](https://github.com/RVC-Boss/GPT-SoVITS)
+
+| MaiMai | 卖卖| singing female anchor | 唱歌女主播声 | zh | 中 |
+
+## Changelog
+
+### v0.2.0 (2025-10)
+- ✨ Added streaming TTS feature with low-latency real-time speech synthesis
+- ✨ Added unified logging system (based on loguru)
+- 🐛 Fixed PyTorch 2.0+ `weight_norm` deprecation warning
+- 🐛 Fixed `torch.stft` `return_complex=False` deprecation warning
+- 🐛 Fixed librosa `resample` and `time_stretch` warnings
+- 🔧 Optimized model loading mechanism, no need to manually add `sys.path`
+- 📝 Improved documentation and example code
+
+### v0.1.0 (2024-12)
+- 🎉 Initial release
+- ✨ Support for ASR (Automatic Speech Recognition)
+- ✨ Support for TTS (Text-to-Speech)
+- ✨ Support for Chinese, English, and Japanese
