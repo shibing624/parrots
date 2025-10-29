@@ -7,11 +7,10 @@ import argparse
 import sys
 
 sys.path.append('..')
-import parrots
 from parrots.tts import TextToSpeech
+from parrots.log import set_log_level
 
-parrots_path = parrots.__path__[0]
-sys.path.append(parrots_path)  # add parrots to sys.path
+set_log_level("DEBUG")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -20,7 +19,9 @@ if __name__ == "__main__":
     parser.add_argument("--speaker_name", type=str, default="MaiMai", help="Name")
     parser.add_argument("--device", type=str, default="cpu", help="Device to run on, cpu or cuda")
     parser.add_argument("--half", action="store_true", help="Use half precision instead of float32")
-    parser.add_argument("--text", type=str, default="你好，欢迎来到北京。这是一个合成录音文件的演示。Welcome to Beijing! This is a demo.", help="input text")
+    parser.add_argument("--text", type=str,
+                        default="你好，欢迎来到北京。这是一个合成录音文件的演示。Welcome to Beijing! This is a demo.",
+                        help="input text")
     parser.add_argument("--lang", type=str, default="auto", help="Language of the text, zh, en, jp, auto")
     parser.add_argument("--output_path", type=str, default="output_audio.wav", help="output wav")
     args = parser.parse_args()

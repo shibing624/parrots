@@ -7,6 +7,7 @@ import os
 import re
 
 import cn2an
+import jieba
 import jieba.posseg as psg
 from pypinyin import lazy_pinyin, Style
 from zh_normalization import TextNormalizer
@@ -14,6 +15,7 @@ from zh_normalization import TextNormalizer
 from parrots.symbols import punctuation
 from parrots.tone_sandhi import ToneSandhi
 
+jieba.setLogLevel("ERROR")
 normalizer = lambda x: cn2an.transform(x, "an2cn")
 
 pwd_path = os.path.abspath(os.path.dirname(__file__))

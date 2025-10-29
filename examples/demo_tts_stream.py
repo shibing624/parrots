@@ -11,11 +11,7 @@ import numpy as np
 from loguru import logger
 
 sys.path.append('..')
-import parrots
-from parrots.tts import TextToSpeech
-
-parrots_path = parrots.__path__[0]
-sys.path.append(parrots_path)
+from parrots import TextToSpeech
 
 
 class AudioPlayer:

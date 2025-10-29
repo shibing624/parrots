@@ -8,12 +8,12 @@ from typing import Union
 
 import fire
 import numpy as np
-from loguru import logger
 
 sys.path.append('..')
 
 from parrots.asr import SpeechRecognition
 from parrots.tts import TextToSpeech
+from parrots.log import logger
 
 global speech_recognition_model
 speech_recognition_model = None

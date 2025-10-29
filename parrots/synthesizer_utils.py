@@ -7,7 +7,7 @@
 import math
 import typing
 from dataclasses import dataclass, field
-
+from tqdm import tqdm
 import numpy as np
 import torch
 import torch.distributions as D
@@ -15,7 +15,14 @@ from einops import rearrange, repeat
 from torch import nn
 from torch.nn import Conv1d
 from torch.nn import functional as F
-from tqdm import tqdm
+try:
+    # PyTorch >= 2.0
+    from torch.nn.utils.parametrizations import weight_norm
+    from torch.nn.utils import remove_weight_norm
+except ImportError:
+    # PyTorch < 2.0 (fallback)
+    from torch.nn.utils import weight_norm, remove_weight_norm
+
 
 
 def init_weights(m, mean=0.0, std=0.01):
@@ -642,10 +649,6 @@ class FFN(nn.Module):
         padding = [[0, 0], [0, 0], [pad_l, pad_r]]
         x = F.pad(x, convert_pad_shape(padding))
         return x
-
-
-import torch.nn as nn
-from torch.nn.utils import remove_weight_norm, weight_norm
 
 
 class Depthwise_Separable_Conv1D(nn.Module):
@@ -1719,7 +1722,7 @@ class WN(torch.nn.Module):
             cond_layer = torch.nn.Conv1d(
                 gin_channels, 2 * hidden_channels * n_layers, 1
             )
-            self.cond_layer = torch.nn.utils.weight_norm(cond_layer, name="weight")
+            self.cond_layer = weight_norm(cond_layer, name="weight")
 
         for i in range(n_layers):
             dilation = dilation_rate ** i
@@ -1731,7 +1734,7 @@ class WN(torch.nn.Module):
                 dilation=dilation,
                 padding=padding,
             )
-            in_layer = torch.nn.utils.weight_norm(in_layer, name="weight")
+            in_layer = weight_norm(in_layer, name="weight")
             self.in_layers.append(in_layer)
 
             # last one is not necessary
@@ -1741,7 +1744,7 @@ class WN(torch.nn.Module):
                 res_skip_channels = hidden_channels
 
             res_skip_layer = torch.nn.Conv1d(hidden_channels, res_skip_channels, 1)
-            res_skip_layer = torch.nn.utils.weight_norm(res_skip_layer, name="weight")
+            res_skip_layer = weight_norm(res_skip_layer, name="weight")
             self.res_skip_layers.append(res_skip_layer)
 
     def forward(self, x, x_mask, g=None, **kwargs):

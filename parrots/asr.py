@@ -7,8 +7,8 @@ from typing import Optional, Union
 
 import numpy as np
 import torch
-from loguru import logger
 from transformers import pipeline, AutoModelForSpeechSeq2Seq, AutoProcessor
+from parrots.log import logger
 
 has_cuda = torch.cuda.is_available()
 

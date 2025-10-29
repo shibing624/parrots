@@ -5,7 +5,14 @@ from torch import nn
 from torch.cuda.amp import autocast
 from torch.nn import Conv1d, ConvTranspose1d, Conv2d
 from torch.nn import functional as F
-from torch.nn.utils import weight_norm, remove_weight_norm, spectral_norm
+try:
+    # PyTorch >= 2.0
+    from torch.nn.utils.parametrizations import weight_norm
+    from torch.nn.utils import remove_weight_norm
+except ImportError:
+    # PyTorch < 2.0 (fallback)
+    from torch.nn.utils import weight_norm, remove_weight_norm
+from torch.nn.utils import spectral_norm
 
 from parrots.symbols import symbols
 from parrots.synthesizer_utils import (

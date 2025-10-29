@@ -19,8 +19,14 @@ import soundfile
 import torch
 import nltk
 from huggingface_hub import snapshot_download
-from loguru import logger
 from transformers import AutoModelForMaskedLM, AutoTokenizer
+
+from parrots.log import logger
+try:
+    import parrots.utils as _parrots_utils
+    sys.modules.setdefault('utils', _parrots_utils)
+except Exception as e:
+    logger.debug(f"Failed to alias utils -> parrots.utils: {e}")
 
 from parrots import cnhubert
 from parrots.mel_processing import spectrogram_torch
@@ -28,6 +34,7 @@ from parrots.synthesizer_model import SynthesizerModel
 from parrots.t2s_model import Text2SemanticDecoder
 from parrots.text_utils import clean_text, cleaned_text_to_sequence
 from parrots.symbols import sentence_split_symbols
+
 
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 os.environ["TOKENIZERS_PARALLELISM"] = "TRUE"
@@ -103,7 +110,7 @@ def load_audio(file, sr):
             audio = audio.mean(axis=1)
         # Resample if necessary
         if orig_sr != sr:
-            audio = librosa.resample(audio, orig_sr=orig_sr, target_sr=sr)
+            audio = librosa.resample(audio, orig_sr=orig_sr, target_sr=sr, res_type='kaiser_best')
         logger.info(f"Successfully loaded audio with soundfile (fallback method)")
         return audio.astype(np.float32)
     except Exception as e:
@@ -919,7 +926,7 @@ class TextToSpeech:
                     
                     # Apply speed adjustment if needed
                     if speed != 1.0:
-                        audio_chunk = librosa.effects.time_stretch(audio_chunk, rate=speed)
+                        audio_chunk = librosa.effects.time_stretch(audio_chunk, rate=speed, sr=self.sampling_rate)
                     
                     # Yield the audio chunk
                     if len(audio_chunk) > 0:  # Only yield non-empty chunks

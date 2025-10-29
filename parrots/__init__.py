@@ -5,6 +5,7 @@
 """
 __version__ = '1.0.8'
 
-from parrots import utils
 from parrots.asr import SpeechRecognition
 from parrots.pinyin2hanzi import Pinyin2Hanzi
+from parrots.tts import TextToSpeech
+from parrots.log import logger, set_log_level, add_file_logger, LOG_LEVEL

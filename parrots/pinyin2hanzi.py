@@ -7,7 +7,7 @@
 基于马尔可夫模型的语言模型
 """
 import os
-from loguru import logger
+from parrots.log import logger
 
 pwd_path = os.path.abspath(os.path.dirname(__file__))
 pinyin2hanzi_dir = os.path.join(pwd_path, 'data/pinyin2hanzi')
