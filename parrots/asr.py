@@ -10,7 +10,71 @@ import torch
 from transformers import pipeline, AutoModelForSpeechSeq2Seq, AutoProcessor
 from parrots.log import logger
 
+try:
+    import librosa
+    HAS_LIBROSA = True
+except ImportError:
+    HAS_LIBROSA = False
+
+try:
+    import soundfile as sf
+    HAS_SOUNDFILE = True
+except ImportError:
+    HAS_SOUNDFILE = False
+
 has_cuda = torch.cuda.is_available()
+
+
+def load_audio(audio_path_or_bytes: Union[str, bytes], sampling_rate: int = 16000) -> np.ndarray:
+    """
+    Load audio file without ffmpeg dependency.
+    
+    Args:
+        audio_path_or_bytes: Path to audio file or audio bytes
+        sampling_rate: Target sampling rate
+        
+    Returns:
+        Audio array as numpy.ndarray
+    """
+    if isinstance(audio_path_or_bytes, bytes):
+        # Handle bytes input
+        import io
+        if HAS_SOUNDFILE:
+            audio, sr = sf.read(io.BytesIO(audio_path_or_bytes))
+            if sr != sampling_rate:
+                if HAS_LIBROSA:
+                    audio = librosa.resample(audio, orig_sr=sr, target_sr=sampling_rate)
+                else:
+                    logger.warning(f"Audio sampling rate is {sr}, but target is {sampling_rate}. "
+                                   "Install librosa for automatic resampling.")
+        elif HAS_LIBROSA:
+            audio, sr = librosa.load(io.BytesIO(audio_path_or_bytes), sr=sampling_rate)
+        else:
+            raise ImportError("Either soundfile or librosa is required to load audio from bytes. "
+                              "Install with: pip install soundfile librosa")
+    else:
+        # Handle file path input
+        if HAS_LIBROSA:
+            # librosa automatically resamples to target sampling_rate
+            audio, sr = librosa.load(audio_path_or_bytes, sr=sampling_rate)
+        elif HAS_SOUNDFILE:
+            audio, sr = sf.read(audio_path_or_bytes)
+            if sr != sampling_rate:
+                logger.warning(f"Audio sampling rate is {sr}, but target is {sampling_rate}. "
+                               "Install librosa for automatic resampling: pip install librosa")
+        else:
+            raise ImportError("Either librosa or soundfile is required to load audio files. "
+                              "Install with: pip install soundfile librosa")
+    
+    # Ensure mono audio
+    if len(audio.shape) > 1:
+        audio = audio.mean(axis=1)
+    
+    # Ensure float32 dtype
+    if audio.dtype != np.float32:
+        audio = audio.astype(np.float32)
+    
+    return audio
 
 
 class SpeechRecognition:
@@ -124,7 +188,7 @@ class SpeechRecognition:
             )
         logger.info(f"Speech recognition model: {model_name_or_path} has been loaded.")
 
-    def predict(self, inputs: Union[np.ndarray, bytes, str]):
+    def predict(self, inputs: Union[np.ndarray, bytes, str], preprocess_audio: bool = True):
         """语音识别用的函数，识别一个wav序列的语音
         Transcribe the audio sequence(s) given as inputs to text. See the [`AutomaticSpeechRecognitionPipeline`]
         documentation for more information.
@@ -132,11 +196,10 @@ class SpeechRecognition:
         Args:
             inputs (`np.ndarray` or `bytes` or `str` or `dict`):
                 The inputs is either :
-                    - `str` that is either the filename of a local audio file, or a public URL address to download the
-                      audio file. The file will be read at the correct sampling rate to get the waveform using
-                      *ffmpeg*. This requires *ffmpeg* to be installed on the system.
-                    - `bytes` it is supposed to be the content of an audio file and is interpreted by *ffmpeg* in the
-                      same way.
+                    - `str` that is either the filename of a local audio file. The file will be read at the correct 
+                      sampling rate to get the waveform using *librosa* or *soundfile* (no ffmpeg required).
+                    - `bytes` it is supposed to be the content of an audio file and is interpreted by *soundfile* 
+                      or *librosa* in the same way.
                     - (`np.ndarray` of shape (n, ) of type `np.float32` or `np.float64`)
                         Raw audio at the correct sampling rate (no further check will be done)
                     - `dict` form can be used to pass raw audio sampled at arbitrary `sampling_rate` and let this
@@ -144,6 +207,9 @@ class SpeechRecognition:
                       np.array}` with optionally a `"stride": (left: int, right: int)` than can ask the pipeline to
                       treat the first `left` samples and last `right` samples to be ignored in decoding (but used at
                       inference to provide more context to the model). Only use `stride` with CTC models.
+            preprocess_audio (`bool`, *optional*, defaults to `True`):
+                Whether to preprocess audio files/bytes using librosa/soundfile instead of relying on the pipeline's
+                internal ffmpeg-based processing. Set to False to use the pipeline's default behavior.
             return_timestamps (*optional*, `str` or `bool`):
                 Only available for pure CTC models (Wav2Vec2, HuBERT, etc) and the Whisper model. Not available for
                 other sequence-to-sequence models.
@@ -194,6 +260,12 @@ class SpeechRecognition:
                 print(processor.batch_decode(outputs, skip_special_tokens=True))
         ```
         """
+        # Preprocess audio input to avoid ffmpeg dependency
+        if preprocess_audio and (isinstance(inputs, (str, bytes))):
+            # Get the sampling rate from the feature extractor
+            sampling_rate = self.processor.feature_extractor.sampling_rate
+            # Load audio using librosa/soundfile instead of ffmpeg
+            inputs = load_audio(inputs, sampling_rate=sampling_rate)
 
         return self.pipe(inputs)
 
