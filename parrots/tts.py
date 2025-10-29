@@ -102,12 +102,11 @@ def load_audio(file, sr):
         )
         return np.frombuffer(out, np.float32).flatten()
     except Exception as e:
-        logger.debug(f"Failed to load audio with ffmpeg: {e}, trying fallback methods...")
+        logger.debug(f"Failed to load audio with ffmpeg: {e}, trying librosa to load.")
     
     # Fallback 1: Try librosa (most common audio library)
     try:
         audio, orig_sr = librosa.load(file, sr=sr, mono=True)
-        logger.info(f"Successfully loaded audio with librosa (fallback method)")
         return audio.astype(np.float32)
     except Exception as e:
         logger.warning(f"Failed to load audio with librosa: {e}, trying soundfile...")
