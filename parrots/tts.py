@@ -13,7 +13,6 @@ import wave
 from enum import Enum
 from typing import Union, Optional
 
-import ffmpeg
 import librosa
 import numpy as np
 import soundfile
@@ -75,22 +74,60 @@ class LANG(Enum):
 
 
 def load_audio(file, sr):
+    """
+    Load audio file and resample to target sample rate.
+    First try using ffmpeg, if failed, fallback to librosa or soundfile.
+    
+    Args:
+        file: path to audio file
+        sr: target sample rate
+    
+    Returns:
+        audio: numpy array of audio samples
+    """
+    file = (
+        file.strip(" ").strip('"').strip("\n").strip('"').strip(" ")
+    )  # 防止小白拷路径头尾带了空格和"和回车
+    
+    # Try ffmpeg first (fastest and most robust)
     try:
+        import ffmpeg
         # https://github.com/openai/whisper/blob/main/whisper/audio.py#L26
         # This launches a subprocess to decode audio while down-mixing and resampling as necessary.
         # Requires the ffmpeg CLI and `ffmpeg-python` package to be installed.
-        file = (
-            file.strip(" ").strip('"').strip("\n").strip('"').strip(" ")
-        )  # 防止小白拷路径头尾带了空格和"和回车
         out, _ = (
             ffmpeg.input(file, threads=0)
             .output("-", format="f32le", acodec="pcm_f32le", ac=1, ar=sr)
             .run(cmd=["ffmpeg", "-nostdin"], capture_stdout=True, capture_stderr=True)
         )
+        return np.frombuffer(out, np.float32).flatten()
     except Exception as e:
-        raise RuntimeError(f"Failed to load audio: {e}")
-
-    return np.frombuffer(out, np.float32).flatten()
+        logger.debug(f"Failed to load audio with ffmpeg: {e}, trying fallback methods...")
+    
+    # Fallback 1: Try librosa (most common audio library)
+    try:
+        audio, orig_sr = librosa.load(file, sr=sr, mono=True)
+        logger.info(f"Successfully loaded audio with librosa (fallback method)")
+        return audio.astype(np.float32)
+    except Exception as e:
+        logger.warning(f"Failed to load audio with librosa: {e}, trying soundfile...")
+    
+    # Fallback 2: Try soundfile
+    try:
+        audio, orig_sr = soundfile.read(file, dtype='float32')
+        # Convert to mono if stereo
+        if len(audio.shape) > 1:
+            audio = audio.mean(axis=1)
+        # Resample if necessary
+        if orig_sr != sr:
+            audio = librosa.resample(audio, orig_sr=orig_sr, target_sr=sr)
+        logger.info(f"Successfully loaded audio with soundfile (fallback method)")
+        return audio.astype(np.float32)
+    except Exception as e:
+        logger.error(f"Failed to load audio with soundfile: {e}")
+    
+    # All methods failed
+    raise RuntimeError(f"Failed to load audio file {file} with all available methods (ffmpeg, librosa, soundfile)")
 
 
 def get_spepc(hps, filename):
