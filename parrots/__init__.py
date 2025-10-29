@@ -3,7 +3,7 @@
 @author:XuMing(xuming624@qq.com)
 @description: 
 """
-__version__ = '1.0.6'
+__version__ = '1.0.7'
 
 from parrots import utils
 from parrots.asr import SpeechRecognition
