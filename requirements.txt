@@ -10,6 +10,5 @@ cn2an
 zh-normalization
 einops
 ffmpeg-python
-LangSegment
 soundfile
 fire

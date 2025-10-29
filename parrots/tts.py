@@ -13,7 +13,6 @@ import wave
 from enum import Enum
 from typing import Union, Optional
 
-import LangSegment
 import ffmpeg
 import librosa
 import numpy as np
@@ -92,6 +91,46 @@ def get_spepc(hps, filename):
         center=False,
     )
     return spec
+
+
+def get_language_texts(text):
+    """
+    Automatically detect and split text by language (zh, en, ja).
+    Returns a list of dicts with 'lang' and 'text' keys.
+    """
+    # Define character ranges for different languages
+    # Chinese: \u4e00-\u9fff
+    # Japanese Hiragana: \u3040-\u309f
+    # Japanese Katakana: \u30a0-\u30ff
+    # English and numbers: a-zA-Z0-9
+    pattern = re.compile(
+        r'([\u4e00-\u9fff]+|[\u3040-\u309f\u30a0-\u30ff]+|[a-zA-Z0-9\s]+|[^\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ffa-zA-Z0-9\s]+)'
+    )
+    
+    results = []
+    for match in pattern.finditer(text):
+        segment = match.group(0)
+        if not segment.strip():
+            continue
+            
+        # Detect language
+        if re.search(r'[\u4e00-\u9fff]', segment):
+            lang = 'zh'
+        elif re.search(r'[\u3040-\u309f\u30a0-\u30ff]', segment):
+            lang = 'ja'
+        elif re.search(r'[a-zA-Z]', segment):
+            lang = 'en'
+        else:
+            # Default to previous language or zh
+            lang = results[-1]['lang'] if results else 'zh'
+        
+        # Merge with previous segment if same language
+        if results and results[-1]['lang'] == lang:
+            results[-1]['text'] += segment
+        else:
+            results.append({'lang': lang, 'text': segment})
+    
+    return results
 
 
 def split_en_inf(sentence, language):
@@ -420,7 +459,7 @@ class TextToSpeech:
         if language == "auto":
             textlist = []
             langlist = []
-            for tmp in LangSegment.getTexts(text):
+            for tmp in get_language_texts(text):
                 langlist.append(tmp["lang"])
                 textlist.append(tmp["text"])
         else:
@@ -437,7 +476,7 @@ class TextToSpeech:
         if language == "auto":
             textlist = []
             langlist = []
-            for tmp in LangSegment.getTexts(text):
+            for tmp in get_language_texts(text):
                 langlist.append(tmp["lang"])
                 textlist.append(tmp["text"])
         else:
