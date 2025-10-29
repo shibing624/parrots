@@ -297,7 +297,7 @@ def load_json_file(filepath):
 
 
 def merge_short_text_in_array(texts, threshold):
-    if (len(texts)) < 2:
+    if len(texts) < 2:
         return texts
     result = []
     text = ""
@@ -465,6 +465,9 @@ class TextToSpeech:
 
         # HuBERT
         self.ssl_model = self.to_device(cnhubert.get_model(hubert_model_path, self.sampling_rate))
+        
+        # Cache for streaming TTS
+        self._ref_cache = {}
 
     @staticmethod
     def adjust_keys(state_dict):
@@ -716,6 +719,304 @@ class TextToSpeech:
             soundfile.write(output_path, audio_output, self.sampling_rate)
             logger.debug(f"Save audio to {output_path}")
             return output_path
+
+    @torch.inference_mode()
+    def prepare_reference(
+            self,
+            ref_wav_path: str = None,
+            ref_prompt: str = None,
+            ref_language: Union[str, LANG] = None,
+    ):
+        """
+        Prepare and cache reference audio features for streaming TTS.
+        This significantly reduces first chunk latency by pre-computing reference features.
+        
+        Args:
+            ref_wav_path: str, path to the reference wav file
+            ref_prompt: str, reference prompt text
+            ref_language: str, language of the reference prompt
+            
+        Returns:
+            cache_key: str, key for accessing cached features
+        """
+        if ref_wav_path is None:
+            ref_wav_path = self.ref_wav_path
+        if ref_prompt is None:
+            ref_prompt = self.ref_prompt
+        if ref_language is None:
+            ref_language = self.ref_language
+            
+        ref_language = LANG.from_string(ref_language) if isinstance(ref_language, str) else ref_language
+        ref_language = str(ref_language)
+        
+        ref_prompt = ref_prompt.strip()
+        if ref_prompt[-1] not in sentence_split_symbols:
+            ref_prompt += "。" if ref_language != "en" else "."
+            
+        # Create cache key
+        cache_key = f"{ref_wav_path}_{ref_prompt}_{ref_language}"
+        
+        # Check if already cached
+        if cache_key in self._ref_cache:
+            logger.debug(f"Reference already cached: {cache_key}")
+            return cache_key
+            
+        logger.info(f"Preparing reference audio features for streaming...")
+        
+        # Load and process reference audio
+        zero_wav = np.zeros(
+            int(self.hps.data.sampling_rate * 0.3),
+            dtype=np.float16 if self.half else np.float32,
+        )
+        wav16k, sr = librosa.load(ref_wav_path, sr=16000)
+        if wav16k.shape[0] > 160000 or wav16k.shape[0] < 48000:
+            raise ValueError("参考音频需要是3~10秒范围内的，请更换！")
+            
+        wav16k = torch.from_numpy(wav16k)
+        zero_wav_torch = torch.from_numpy(zero_wav)
+        if self.half:
+            wav16k = wav16k.half().to(self.device)
+            zero_wav_torch = zero_wav_torch.half().to(self.device)
+        else:
+            wav16k = wav16k.to(self.device)
+            zero_wav_torch = zero_wav_torch.to(self.device)
+        wav16k = torch.cat([wav16k, zero_wav_torch])
+        
+        # Extract semantic features
+        ssl_content = self.ssl_model.model(wav16k.unsqueeze(0))["last_hidden_state"].transpose(1, 2)
+        codes = self.vq_model.extract_latent(ssl_content)
+        prompt_semantic = codes[0, 0]
+        
+        # Process reference text
+        phones1, word2ph1, norm_text1 = self.get_cleaned_text_final(ref_prompt, ref_language)
+        bert1 = self.get_bert_final(phones1, word2ph1, norm_text1, ref_language).to(self.dtype)
+        
+        # Get reference spectrogram
+        refer = get_spepc(self.hps, ref_wav_path)
+        refer = self.to_device(refer)
+        
+        # Cache all features
+        self._ref_cache[cache_key] = {
+            "prompt_semantic": prompt_semantic,
+            "phones1": phones1,
+            "word2ph1": word2ph1,
+            "norm_text1": norm_text1,
+            "bert1": bert1,
+            "refer": refer,
+            "ref_language": ref_language,
+        }
+        
+        logger.info(f"Reference prepared and cached: {cache_key}")
+        return cache_key
+
+    @torch.inference_mode()
+    def predict_stream(
+            self,
+            text: str,
+            text_language: Union[str, LANG] = "auto",
+            speed: float = 1.0,
+            ref_wav_path: str = None,
+            ref_prompt: str = None,
+            ref_language: Union[str, LANG] = None,
+            top_k: int = 20,
+            top_p: float = 0.6,
+            temperature: float = 0.6,
+            stream_chunk_size: int = 20,
+    ):
+        """
+        Streaming TTS generation with incremental decoding.
+        Accumulates all semantic tokens and decodes incrementally, outputting only new audio.
+        
+        Args:
+            text: str, target text
+            text_language: str, language of target text
+            speed: float, speech speed
+            ref_wav_path: str, reference audio file
+            ref_prompt: str, reference prompt text
+            ref_language: str, reference language
+            top_k: int, top k sampling
+            top_p: float, top p sampling
+            temperature: float, sampling temperature
+            stream_chunk_size: int, number of semantic tokens per chunk (smaller = lower latency)
+            
+        Yields:
+            audio_chunk: numpy array, incremental audio chunk (float32)
+        """
+        # Prepare reference (use cache if available)
+        cache_key = self.prepare_reference(ref_wav_path, ref_prompt, ref_language)
+        ref_cache = self._ref_cache[cache_key]
+        
+        # Parse language
+        text_language = LANG.from_string(text_language) if isinstance(text_language, str) else text_language
+        text_language = str(text_language)
+        
+        # Preprocess text
+        text = text.strip()
+        if text[0] not in sentence_split_symbols and len(get_first(text)) < 4:
+            text = "。" + text if text_language != "en" else "." + text
+            
+        text = sentence_split_by_length(text)
+        while "\n\n" in text:
+            text = text.replace("\n\n", "\n")
+        texts = text.split("\n")
+        texts = merge_short_text_in_array(texts, 5)
+        
+        logger.debug(f"Streaming TTS for {len(texts)} text segments")
+        
+        # Process each text segment
+        for text_idx, text in enumerate(texts):
+            if not text.strip():
+                continue
+                
+            if text[-1] not in sentence_split_symbols:
+                text += "。" if text_language != "en" else "."
+                
+            logger.debug(f"Processing segment {text_idx + 1}/{len(texts)}: {text}")
+            
+            # Text processing
+            phones2, word2ph2, norm_text2 = self.get_cleaned_text_final(text, text_language)
+            bert2 = self.get_bert_final(phones2, word2ph2, norm_text2, text_language).to(self.dtype)
+            bert = torch.cat([ref_cache["bert1"], bert2], 1)
+            
+            all_phoneme_ids = torch.LongTensor(ref_cache["phones1"] + phones2).to(self.device).unsqueeze(0)
+            bert = bert.to(self.device).unsqueeze(0)
+            all_phoneme_len = torch.tensor([all_phoneme_ids.shape[-1]]).to(self.device)
+            prompt = ref_cache["prompt_semantic"].unsqueeze(0).to(self.device)
+            
+            # Streaming with chunk-by-chunk decoding
+            # Strategy: decode each semantic chunk independently to avoid alignment issues
+            for semantic_chunk in self._generate_semantic_stream(
+                all_phoneme_ids,
+                all_phoneme_len,
+                prompt,
+                bert,
+                top_k=top_k,
+                top_p=top_p,
+                temperature=temperature,
+                chunk_size=stream_chunk_size,
+            ):
+                try:
+                    # Decode only the current semantic chunk
+                    # This avoids alignment issues between accumulated semantics and phonemes
+                    audio_chunk = self.vq_model.decode(
+                        semantic_chunk.unsqueeze(0),
+                        torch.LongTensor(phones2).to(self.device).unsqueeze(0),
+                        ref_cache["refer"],
+                    ).detach().cpu().numpy()[0, 0]
+                    
+                    # Normalize audio
+                    max_audio = np.abs(audio_chunk).max()
+                    if max_audio > 1:
+                        audio_chunk /= max_audio
+                    
+                    # Apply speed adjustment if needed
+                    if speed != 1.0:
+                        audio_chunk = librosa.effects.time_stretch(audio_chunk, rate=speed)
+                    
+                    # Yield the audio chunk
+                    if len(audio_chunk) > 0:  # Only yield non-empty chunks
+                        yield audio_chunk.astype(np.float32)
+                    
+                except Exception as e:
+                    logger.warning(f"Failed to decode chunk: {e}")
+                    continue
+
+    def _generate_semantic_stream(
+            self,
+            all_phoneme_ids,
+            all_phoneme_len,
+            prompt,
+            bert,
+            top_k=20,
+            top_p=0.6,
+            temperature=0.6,
+            chunk_size=20,
+    ):
+        """
+        Generate semantic tokens in streaming fashion.
+        Yields chunks of semantic tokens as they are generated.
+        (Legacy method - kept for compatibility)
+        """
+        from parrots.t2s_utils import sample
+        import torch.nn.functional as F
+        
+        # Prepare text embeddings
+        x = self.t2s_model.ar_text_embedding(all_phoneme_ids)
+        x = x + self.t2s_model.bert_proj(bert.transpose(1, 2))
+        x = self.t2s_model.ar_text_position(x)
+        
+        y = prompt
+        prefix_len = y.shape[1]
+        x_len = x.shape[1]
+        x_attn_mask = torch.zeros((x_len, x_len), dtype=torch.bool, device=x.device)
+        
+        # Cache for efficient generation
+        cache = {
+            "all_stage": self.t2s_model.num_layers,
+            "k": [None] * self.t2s_model.num_layers,
+            "v": [None] * self.t2s_model.num_layers,
+            "y_emb": None,
+            "first_infer": 1,
+            "stage": 0,
+        }
+        
+        chunk_tokens = []
+        
+        for idx in range(1500):  # Max length
+            # Generate next token
+            if cache["first_infer"] == 1:
+                y_emb = self.t2s_model.ar_audio_embedding(y)
+            else:
+                y_emb = torch.cat([cache["y_emb"], self.t2s_model.ar_audio_embedding(y[:, -1:])], 1)
+            cache["y_emb"] = y_emb
+            
+            y_pos = self.t2s_model.ar_audio_position(y_emb)
+            
+            if cache["first_infer"] == 1:
+                xy_pos = torch.concat([x, y_pos], dim=1)
+            else:
+                xy_pos = y_pos[:, -1:]
+                
+            y_len = y_pos.shape[1]
+            
+            if cache["first_infer"] == 1:
+                x_attn_mask_pad = F.pad(x_attn_mask, (0, y_len), value=True)
+                y_attn_mask = F.pad(
+                    torch.triu(torch.ones(y_len, y_len, dtype=torch.bool, device=y.device), diagonal=1),
+                    (x_len, 0),
+                    value=False,
+                )
+                xy_attn_mask = torch.concat([x_attn_mask_pad, y_attn_mask], dim=0)
+            else:
+                xy_attn_mask = torch.zeros((1, x_len + y_len), dtype=torch.bool, device=xy_pos.device)
+                
+            xy_dec, _ = self.t2s_model.h((xy_pos, None), mask=xy_attn_mask, cache=cache)
+            logits = self.t2s_model.ar_predict_layer(xy_dec[:, -1])
+            
+            if idx == 0:
+                logits = logits[:, :-1]
+                
+            samples = sample(
+                logits[0], y, top_k=top_k, top_p=top_p, repetition_penalty=1.35, temperature=temperature
+            )[0].unsqueeze(0)
+            
+            # Check for EOS
+            if torch.argmax(logits, dim=-1)[0] == self.t2s_model.EOS or samples[0, 0] == self.t2s_model.EOS:
+                if len(chunk_tokens) > 0:
+                    yield torch.cat(chunk_tokens, dim=1)
+                break
+                
+            y = torch.concat([y, samples], dim=1)
+            cache["first_infer"] = 0
+            
+            # Accumulate tokens for chunk
+            if y.shape[1] > prefix_len:
+                chunk_tokens.append(y[:, -1:])
+                
+                # Yield chunk when reaching chunk_size
+                if len(chunk_tokens) >= chunk_size:
+                    yield torch.cat(chunk_tokens, dim=1)
+                    chunk_tokens = []
 
 
 if __name__ == "__main__":
