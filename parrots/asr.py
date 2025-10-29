@@ -75,7 +75,7 @@ class SpeechRecognition:
         
         # Prepare model loading kwargs
         model_kwargs = {
-            "dtype": torch_dtype,
+            "torch_dtype": torch_dtype,
         }
         
         # Only add use_flash_attention_2 if explicitly requested and supported
@@ -108,7 +108,7 @@ class SpeechRecognition:
             tokenizer=self.processor.tokenizer,
             feature_extractor=self.processor.feature_extractor,
             device=self.device,
-            dtype=torch_dtype,
+            torch_dtype=torch_dtype,
             max_new_tokens=max_new_tokens,
             batch_size=batch_size,
             chunk_length_s=chunk_length_s,
