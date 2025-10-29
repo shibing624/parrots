@@ -68,13 +68,16 @@ def _get_initials_finals(word):
 
 
 def _g2p(segments):
+    from loguru import logger
     phones_list = []
     word2ph = []
     for seg in segments:
-        pinyins = []
         # Replace all English words in the sentence
         seg = re.sub("[a-zA-Z]+", "", seg)
-        seg_cut = psg.lcut(seg)
+        seg_cut = psg.cut(seg)
+        # Convert jieba pair objects to list first
+        seg_cut = list(seg_cut)
+        seg_cut = [(w.word, w.flag) for w in seg_cut]
         initials = []
         finals = []
         seg_cut = tone_modifier.pre_merge_for_modify(seg_cut)

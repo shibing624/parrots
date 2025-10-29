@@ -22,6 +22,22 @@ from huggingface_hub import snapshot_download
 from loguru import logger
 from transformers import AutoModelForMaskedLM, AutoTokenizer
 
+# Download NLTK data if not available
+try:
+    import nltk
+    try:
+        nltk.data.find('taggers/averaged_perceptron_tagger_eng')
+    except LookupError:
+        logger.info("Downloading NLTK averaged_perceptron_tagger_eng...")
+        nltk.download('averaged_perceptron_tagger_eng', quiet=True)
+    try:
+        nltk.data.find('taggers/averaged_perceptron_tagger')
+    except LookupError:
+        logger.info("Downloading NLTK averaged_perceptron_tagger...")
+        nltk.download('averaged_perceptron_tagger', quiet=True)
+except Exception as e:
+    logger.warning(f"Failed to download NLTK data: {e}")
+
 sys.path.append('..')
 from parrots import cnhubert
 from parrots.mel_processing import spectrogram_torch
@@ -121,8 +137,10 @@ def get_language_texts(text):
         elif re.search(r'[a-zA-Z]', segment):
             lang = 'en'
         else:
-            # Default to previous language or zh
-            lang = results[-1]['lang'] if results else 'zh'
+            # For punctuation and other characters, merge with previous segment
+            if results:
+                results[-1]['text'] += segment
+            continue
         
         # Merge with previous segment if same language
         if results and results[-1]['lang'] == lang:
