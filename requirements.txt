@@ -12,3 +12,5 @@ einops
 ffmpeg-python
 soundfile
 fire
+pyarrow==20.0.0
+numba==0.61.2

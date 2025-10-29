@@ -378,7 +378,7 @@ class TextToSpeech:
                 raise ValueError("sovits_model_path, gpt_model_path or speaker_model_path must be provided")
 
         # SoVITS
-        sovits_dict = torch.load(sovits_model_path, map_location="cpu")
+        sovits_dict = torch.load(sovits_model_path, map_location="cpu", weights_only=False)
         hps = DictToAttrRecursive(sovits_dict["config"])
         logger.debug(f"SoVITS config: {hps}")
         vq_model = SynthesizerModel(
@@ -395,7 +395,7 @@ class TextToSpeech:
         self.vq_model = vq_model
 
         # GPT
-        gpt_dict = torch.load(gpt_model_path, map_location="cpu")
+        gpt_dict = torch.load(gpt_model_path, map_location="cpu", weights_only=False)
         config = gpt_dict["config"]
         logger.debug(f"GPT config: {config}")
         t2s_model = Text2SemanticDecoder(config)
