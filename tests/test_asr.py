@@ -23,7 +23,8 @@ class TestSpeechRecognition(unittest.TestCase):
         m = SpeechRecognition()
         file_path = os.path.join(self.pwd_path, '..', 'examples', 'tushuguan.wav')
         result = m.recognize_speech_from_file(file_path)
-        self.assertEqual(result, '北京图书馆')
+        res = result.get("text")
+        self.assertEqual(res, '北京图书馆')
 
 
 if __name__ == '__main__':

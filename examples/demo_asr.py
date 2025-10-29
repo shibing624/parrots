@@ -20,4 +20,4 @@ if __name__ == '__main__':
 
     m = SpeechRecognition(model_name_or_path=args.model_name_or_path)
     r = m.recognize_speech_from_file(os.path.join(pwd_path, 'tushuguan.wav'))
-    print('[提示] 语音识别结果：', r)
+    print('语音识别结果：', r)

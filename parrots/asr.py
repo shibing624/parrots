@@ -25,6 +25,7 @@ class SpeechRecognition:
             torch_dtype: Optional[str] = "float16",
             use_flash_attention_2: Optional[bool] = False,
             language: Optional[str] = "zh",
+            ignore_warning: Optional[bool] = True,
             **kwargs
     ):
         """
@@ -41,6 +42,8 @@ class SpeechRecognition:
         :param torch_dtype: The torch dtype to use for inference.
         :param use_flash_attention_2: Whether or not to use the FlashAttention2 module.
         :param language: The language of the model to use.
+        :param ignore_warning: Whether to ignore the experimental warning about using chunk_length_s with seq2seq models.
+            Set to True to suppress the warning. Default is True.
         :param kwargs: Additional keyword arguments passed along to the pipeline.
         """
         self.device_map = "auto"
@@ -69,11 +72,33 @@ class SpeechRecognition:
             if torch_dtype in ["auto", None]
             else getattr(torch, torch_dtype)
         )
-        self.model = AutoModelForSpeechSeq2Seq.from_pretrained(
-            model_name_or_path,
-            torch_dtype=torch_dtype,
-            use_flash_attention_2=use_flash_attention_2,
-        )
+        
+        # Prepare model loading kwargs
+        model_kwargs = {
+            "dtype": torch_dtype,
+        }
+        
+        # Only add use_flash_attention_2 if explicitly requested and supported
+        # Note: Flash Attention 2 may not be supported by all model versions
+        if use_flash_attention_2:
+            try:
+                self.model = AutoModelForSpeechSeq2Seq.from_pretrained(
+                    model_name_or_path,
+                    use_flash_attention_2=True,
+                    **model_kwargs
+                )
+            except TypeError:
+                logger.warning("use_flash_attention_2 is not supported by this model, loading without it.")
+                self.model = AutoModelForSpeechSeq2Seq.from_pretrained(
+                    model_name_or_path,
+                    **model_kwargs
+                )
+        else:
+            self.model = AutoModelForSpeechSeq2Seq.from_pretrained(
+                model_name_or_path,
+                **model_kwargs
+            )
+        
         self.model.to(self.device)
 
         self.processor = AutoProcessor.from_pretrained(model_name_or_path)
@@ -83,10 +108,11 @@ class SpeechRecognition:
             tokenizer=self.processor.tokenizer,
             feature_extractor=self.processor.feature_extractor,
             device=self.device,
-            torch_dtype=torch_dtype,
+            dtype=torch_dtype,
             max_new_tokens=max_new_tokens,
             batch_size=batch_size,
             chunk_length_s=chunk_length_s,
+            ignore_warning=ignore_warning,
             **kwargs
         )
         if language == 'zh':
@@ -96,7 +122,7 @@ class SpeechRecognition:
                     task="transcribe"
                 )
             )
-        logger.debug(f"Speech recognition model: {model_name_or_path} has been loaded.")
+        logger.info(f"Speech recognition model: {model_name_or_path} has been loaded.")
 
     def predict(self, inputs: Union[np.ndarray, bytes, str]):
         """语音识别用的函数，识别一个wav序列的语音
