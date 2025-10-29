@@ -87,7 +87,6 @@ class SpeechRecognition:
             chunk_length_s: Optional[int] = 15,
             batch_size: Optional[int] = 16,
             torch_dtype: Optional[str] = "float16",
-            use_flash_attention_2: Optional[bool] = False,
             language: Optional[str] = "zh",
             ignore_warning: Optional[bool] = True,
             **kwargs
@@ -104,7 +103,6 @@ class SpeechRecognition:
         :param chunk_length_s: The length in seconds of the audio chunks to feed to the model.
         :param batch_size: The batch size to use for inference.
         :param torch_dtype: The torch dtype to use for inference.
-        :param use_flash_attention_2: Whether or not to use the FlashAttention2 module.
         :param language: The language of the model to use.
         :param ignore_warning: Whether to ignore the experimental warning about using chunk_length_s with seq2seq models.
             Set to True to suppress the warning. Default is True.
@@ -142,26 +140,10 @@ class SpeechRecognition:
             "torch_dtype": torch_dtype,
         }
         
-        # Only add use_flash_attention_2 if explicitly requested and supported
-        # Note: Flash Attention 2 may not be supported by all model versions
-        if use_flash_attention_2:
-            try:
-                self.model = AutoModelForSpeechSeq2Seq.from_pretrained(
-                    model_name_or_path,
-                    use_flash_attention_2=True,
-                    **model_kwargs
-                )
-            except TypeError:
-                logger.warning("use_flash_attention_2 is not supported by this model, loading without it.")
-                self.model = AutoModelForSpeechSeq2Seq.from_pretrained(
-                    model_name_or_path,
-                    **model_kwargs
-                )
-        else:
-            self.model = AutoModelForSpeechSeq2Seq.from_pretrained(
-                model_name_or_path,
-                **model_kwargs
-            )
+        self.model = AutoModelForSpeechSeq2Seq.from_pretrained(
+            model_name_or_path,
+            **model_kwargs
+        )
         
         self.model.to(self.device)
 
