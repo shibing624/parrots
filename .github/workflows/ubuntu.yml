@@ -1,8 +1,9 @@
 on:
   workflow_dispatch: # Manually running a workflow
   push:
-    branches:
-      - release/*
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
 name: Linux build
 jobs:
   test-ubuntu:
@@ -13,9 +14,9 @@ jobs:
         #python-version: [ 3.7, 3.8, 3.9 ]
         python-version: [ 3.8 ]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Cache pip
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         if: startsWith(runner.os, 'Linux')
         with:
           path: ~/.cache/pip
@@ -23,12 +24,12 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-
       - name: Cache huggingface models
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: ~/.cache/huggingface
           key: ${{ runner.os }}-huggingface-
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install torch
@@ -40,11 +41,11 @@ jobs:
         run: |
           pip install -U parrots
           python -c "import parrots; print(parrots.__version__)"
-          pip uninstall -y textgen
+          pip uninstall -y parrots
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
-          pip install pytest
+          pip install pytest pytest-cov black flake8 mypy
           pip install .
       - name: PKG-TEST
         run: |
