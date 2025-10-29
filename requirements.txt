@@ -9,8 +9,6 @@ g2p_en
 cn2an
 zh-normalization
 einops
-ffmpeg-python
 soundfile
 fire
-pyarrow==20.0.0
-numba==0.61.2
+tqdm

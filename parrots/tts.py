@@ -17,27 +17,11 @@ import librosa
 import numpy as np
 import soundfile
 import torch
+import nltk
 from huggingface_hub import snapshot_download
 from loguru import logger
 from transformers import AutoModelForMaskedLM, AutoTokenizer
 
-# Download NLTK data if not available
-try:
-    import nltk
-    try:
-        nltk.data.find('taggers/averaged_perceptron_tagger_eng')
-    except LookupError:
-        logger.info("Downloading NLTK averaged_perceptron_tagger_eng...")
-        nltk.download('averaged_perceptron_tagger_eng', quiet=True)
-    try:
-        nltk.data.find('taggers/averaged_perceptron_tagger')
-    except LookupError:
-        logger.info("Downloading NLTK averaged_perceptron_tagger...")
-        nltk.download('averaged_perceptron_tagger', quiet=True)
-except Exception as e:
-    logger.warning(f"Failed to download NLTK data: {e}")
-
-sys.path.append('..')
 from parrots import cnhubert
 from parrots.mel_processing import spectrogram_torch
 from parrots.synthesizer_model import SynthesizerModel
@@ -374,6 +358,7 @@ class TextToSpeech:
             speaker_name: Optional[str] = "MaiMai",
             device: Optional[str] = None,
             half: Optional[bool] = False,
+            ensure_nltk: bool = True,
     ):
         """
         Args:
@@ -386,6 +371,7 @@ class TextToSpeech:
             speaker_name: str, name of the speaker, default is "MaiMai"
             device: str, device to run on, "cuda", "cpu" or "mps"
             half: bool, use half precision instead of float32
+            ensure_nltk: bool, whether to check/download NLTK resources during initialization
         """
         if device is None:
             if torch.cuda.is_available():
@@ -398,6 +384,10 @@ class TextToSpeech:
         logger.debug("Use device: {}".format(self.device))
         self.half = half
         self.dtype = torch.float16 if half else torch.float32
+
+        # Ensure required NLTK resources are available (optional to avoid import-time side effects)
+        if ensure_nltk:
+            self._ensure_nltk_data()
 
         # BERT
         self.bert_tokenizer = AutoTokenizer.from_pretrained(bert_model_path)
@@ -468,6 +458,24 @@ class TextToSpeech:
         
         # Cache for streaming TTS
         self._ref_cache = {}
+
+    def _ensure_nltk_data(self):
+        """Ensure NLTK tagger resources exist, download quietly if missing.
+        Moved from module scope to avoid side effects at import time for PyPI.
+        """
+        try:
+            try:
+                nltk.data.find('taggers/averaged_perceptron_tagger_eng')
+            except LookupError:
+                logger.info("Downloading NLTK averaged_perceptron_tagger_eng...")
+                nltk.download('averaged_perceptron_tagger_eng', quiet=True)
+            try:
+                nltk.data.find('taggers/averaged_perceptron_tagger')
+            except LookupError:
+                logger.info("Downloading NLTK averaged_perceptron_tagger...")
+                nltk.download('averaged_perceptron_tagger', quiet=True)
+        except Exception as e:
+            logger.warning(f"Failed to ensure NLTK data: {e}")
 
     @staticmethod
     def adjust_keys(state_dict):
@@ -1020,6 +1028,7 @@ class TextToSpeech:
 
 
 if __name__ == "__main__":
+    sys.path.append('..')
     parser = argparse.ArgumentParser(description="TTS")
     parser.add_argument(
         "--bert",

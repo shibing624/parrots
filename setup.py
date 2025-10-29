@@ -3,10 +3,13 @@
 @author:XuMing(xuming624@qq.com)
 @description:
 """
+import os
 from setuptools import setup, find_packages
 
-with open('README.md', 'r', encoding='utf-8') as f:
-    readme = f.read()
+readme = ''
+if os.path.exists("README.md"):
+    with open('README.md', 'r', encoding='utf-8') as f:
+        readme = f.read()
 
 setup(
     name='parrots',
@@ -19,7 +22,7 @@ setup(
     url='https://github.com/shibing624/parrots',
     license="Apache 2.0",
     zip_safe=False,
-    python_requires=">=3.6.0",
+    python_requires=">=3.8.0",
     entry_points={"console_scripts": ["parrots = parrots.cli:main"]},
     classifiers=[
         'Intended Audience :: Developers',
@@ -47,6 +50,7 @@ setup(
         'einops',
         'soundfile',
         'fire',
+        'tqdm',
     ],
     packages=find_packages(exclude=['tests']),
     package_dir={'parrots': 'parrots'},
