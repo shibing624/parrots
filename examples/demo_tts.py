@@ -13,27 +13,12 @@ from parrots.log import set_log_level
 set_log_level("DEBUG")
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--speaker_model", type=str, default="shibing624/parrots-gpt-sovits-speaker-maimai",
-                        help="Model path")
-    parser.add_argument("--speaker_name", type=str, default="MaiMai", help="Name")
-    parser.add_argument("--device", type=str, default="cpu", help="Device to run on, cpu or cuda")
-    parser.add_argument("--half", action="store_true", help="Use half precision instead of float32")
-    parser.add_argument("--text", type=str,
-                        default="你好，欢迎来到北京。这是一个合成录音文件的演示。Welcome to Beijing! This is a demo.",
-                        help="input text")
-    parser.add_argument("--lang", type=str, default="auto", help="Language of the text, zh, en, jp, auto")
-    parser.add_argument("--output_path", type=str, default="output_audio.wav", help="output wav")
-    args = parser.parse_args()
-    print(f"args: {args}")
     m = TextToSpeech(
-        speaker_model_path=args.speaker_model,
-        speaker_name=args.speaker_name,
-        device=args.device,
-        half=args.half
+        speaker_model_path="shibing624/parrots-gpt-sovits-speaker-maimai",
+        speaker_name="MaiMai",
+        device='cpu'
     )
     m.predict(
-        text=args.text,
-        text_language=args.lang,
-        output_path=args.output_path
+        text='你好，欢迎来到北京。这是一个合成录音文件的演示。Welcome to Beijing!',
+        output_path="output_audio.wav"
     )
