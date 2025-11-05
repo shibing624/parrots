@@ -1,7 +1,7 @@
 pypinyin
 jieba
 loguru
-transformers==4.57.1
+transformers<=4.57.1
 huggingface_hub
 librosa
 nltk
