@@ -4,9 +4,8 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 from munch import Munch
-import json
 import argparse
-from torch.nn.parallel import DistributedDataParallel as DDP
+
 
 def str2bool(v):
     if isinstance(v, bool):
@@ -17,6 +16,7 @@ def str2bool(v):
         return False
     else:
         raise argparse.ArgumentTypeError("Boolean value expected.")
+
 
 class AttrDict(dict):
     def __init__(self, *args, **kwargs):
@@ -50,7 +50,7 @@ def kl_divergence(m_p, logs_p, m_q, logs_q):
     """KL(P||Q)"""
     kl = (logs_q - logs_p) - 0.5
     kl += (
-        0.5 * (torch.exp(2.0 * logs_p) + ((m_p - m_q) ** 2)) * torch.exp(-2.0 * logs_q)
+            0.5 * (torch.exp(2.0 * logs_p) + ((m_p - m_q) ** 2)) * torch.exp(-2.0 * logs_q)
     )
     return kl
 
@@ -100,7 +100,7 @@ def get_timing_signal_1d(length, channels, min_timescale=1.0, max_timescale=1.0e
     position = torch.arange(length, dtype=torch.float)
     num_timescales = channels // 2
     log_timescale_increment = math.log(float(max_timescale) / float(min_timescale)) / (
-        num_timescales - 1
+            num_timescales - 1
     )
     inv_timescales = min_timescale * torch.exp(
         torch.arange(num_timescales, dtype=torch.float) * -log_timescale_increment
@@ -215,18 +215,6 @@ def log_norm(x, mean=-4, std=4, dim=2):
     return x
 
 
-def load_F0_models(path):
-    # load F0 model
-    from .JDC.model import JDCNet
-
-    F0_model = JDCNet(num_class=1, seq_len=192)
-    params = torch.load(path, map_location="cpu")["net"]
-    F0_model.load_state_dict(params)
-    _ = F0_model.train()
-
-    return F0_model
-
-
 def modify_w2v_forward(self, output_layer=15):
     """
     change forward method of w2v encoder to get its intermediate layer output
@@ -237,11 +225,11 @@ def modify_w2v_forward(self, output_layer=15):
     from transformers.modeling_outputs import BaseModelOutput
 
     def forward(
-        hidden_states,
-        attention_mask=None,
-        output_attentions=False,
-        output_hidden_states=False,
-        return_dict=True,
+            hidden_states,
+            attention_mask=None,
+            output_attentions=False,
+            output_hidden_states=False,
+            return_dict=True,
     ):
         all_hidden_states = () if output_hidden_states else None
         all_self_attentions = () if output_attentions else None
@@ -388,21 +376,28 @@ def normalize_f0(f0_sequence):
 
 
 class MyModel(nn.Module):
-    def __init__(self,args, use_emovec=False, use_gpt_latent=False):
+    def __init__(self, args, use_emovec=False, use_gpt_latent=False):
         super(MyModel, self).__init__()
         from parrots.indextts.s2mel.modules.flow_matching import CFM
         from parrots.indextts.s2mel.modules.length_regulator import InterpolateRegulator
-        
+
+        # 如果 args 是字典，转换为 Munch 对象以支持属性访问
+        if isinstance(args, dict):
+            args = recursive_munch(args)
+
         length_regulator = InterpolateRegulator(
             channels=args.length_regulator.channels,
             sampling_ratios=args.length_regulator.sampling_ratios,
             is_discrete=args.length_regulator.is_discrete,
             in_channels=args.length_regulator.in_channels if hasattr(args.length_regulator, "in_channels") else None,
-            vector_quantize=args.length_regulator.vector_quantize if hasattr(args.length_regulator, "vector_quantize") else False,
+            vector_quantize=args.length_regulator.vector_quantize if hasattr(args.length_regulator,
+                                                                             "vector_quantize") else False,
             codebook_size=args.length_regulator.content_codebook_size,
             n_codebooks=args.length_regulator.n_codebooks if hasattr(args.length_regulator, "n_codebooks") else 1,
-            quantizer_dropout=args.length_regulator.quantizer_dropout if hasattr(args.length_regulator, "quantizer_dropout") else 0.0,
-            f0_condition=args.length_regulator.f0_condition if hasattr(args.length_regulator, "f0_condition") else False,
+            quantizer_dropout=args.length_regulator.quantizer_dropout if hasattr(args.length_regulator,
+                                                                                 "quantizer_dropout") else 0.0,
+            f0_condition=args.length_regulator.f0_condition if hasattr(args.length_regulator,
+                                                                       "f0_condition") else False,
             n_f0_bins=args.length_regulator.n_f0_bins if hasattr(args.length_regulator, "n_f0_bins") else 512,
         )
 
@@ -410,7 +405,8 @@ class MyModel(nn.Module):
             self.models = nn.ModuleDict({
                 'cfm': CFM(args),
                 'length_regulator': length_regulator,
-                'gpt_layer': torch.nn.Sequential(torch.nn.Linear(1280, 256), torch.nn.Linear(256, 128), torch.nn.Linear(128, 1024))
+                'gpt_layer': torch.nn.Sequential(torch.nn.Linear(1280, 256), torch.nn.Linear(256, 128),
+                                                 torch.nn.Linear(128, 1024))
             })
 
         else:
@@ -418,12 +414,12 @@ class MyModel(nn.Module):
                 'cfm': CFM(args),
                 'length_regulator': length_regulator
             })
-    
+
     def forward(self, x, target_lengths, prompt_len, cond, y):
         x = self.models['cfm'](x, target_lengths, prompt_len, cond, y)
         return x
-    
-    def forward2(self, S_ori,target_lengths,F0_ori):
+
+    def forward2(self, S_ori, target_lengths, F0_ori):
         x = self.models['length_regulator'](S_ori, ylens=target_lengths, f0=F0_ori)
         return x
 
@@ -435,7 +431,7 @@ class MyModel(nn.Module):
         x = self.models['emo_encoder'](x)
         return x
 
-    def forward_gpt(self,x):
+    def forward_gpt(self, x):
         x = self.models['gpt_layer'](x)
         return x
 
@@ -449,84 +445,14 @@ class MyModel(nn.Module):
             self.models['cfm'].enable_torch_compile()
 
 
-
-def build_model(args, stage="DiT"):
-    if stage == "DiT":
-        from modules.flow_matching import CFM
-        from modules.length_regulator import InterpolateRegulator
-        
-        length_regulator = InterpolateRegulator(
-            channels=args.length_regulator.channels,
-            sampling_ratios=args.length_regulator.sampling_ratios,
-            is_discrete=args.length_regulator.is_discrete,
-            in_channels=args.length_regulator.in_channels if hasattr(args.length_regulator, "in_channels") else None,
-            vector_quantize=args.length_regulator.vector_quantize if hasattr(args.length_regulator, "vector_quantize") else False,
-            codebook_size=args.length_regulator.content_codebook_size,
-            n_codebooks=args.length_regulator.n_codebooks if hasattr(args.length_regulator, "n_codebooks") else 1,
-            quantizer_dropout=args.length_regulator.quantizer_dropout if hasattr(args.length_regulator, "quantizer_dropout") else 0.0,
-            f0_condition=args.length_regulator.f0_condition if hasattr(args.length_regulator, "f0_condition") else False,
-            n_f0_bins=args.length_regulator.n_f0_bins if hasattr(args.length_regulator, "n_f0_bins") else 512,
-        )
-        cfm = CFM(args)
-        nets = Munch(
-            cfm=cfm,
-            length_regulator=length_regulator,
-        )
-        
-    elif stage == 'codec':
-        from dac.model.dac import Encoder
-        from modules.quantize import (
-            FAquantizer,
-        )
-
-        encoder = Encoder(
-            d_model=args.DAC.encoder_dim,
-            strides=args.DAC.encoder_rates,
-            d_latent=1024,
-            causal=args.causal,
-            lstm=args.lstm,
-        )
-
-        quantizer = FAquantizer(
-            in_dim=1024,
-            n_p_codebooks=1,
-            n_c_codebooks=args.n_c_codebooks,
-            n_t_codebooks=2,
-            n_r_codebooks=3,
-            codebook_size=1024,
-            codebook_dim=8,
-            quantizer_dropout=0.5,
-            causal=args.causal,
-            separate_prosody_encoder=args.separate_prosody_encoder,
-            timbre_norm=args.timbre_norm,
-        )
-
-        nets = Munch(
-            encoder=encoder,
-            quantizer=quantizer,
-        )
-
-    elif stage == "mel_vocos":
-        from modules.vocos import Vocos
-        decoder = Vocos(args)
-        nets = Munch(
-            decoder=decoder,
-        )
-
-    else:
-        raise ValueError(f"Unknown stage: {stage}")
-
-    return nets
-
-
 def load_checkpoint(
-    model,
-    optimizer,
-    path,
-    load_only_params=True,
-    ignore_modules=[],
-    is_distributed=False,
-    load_ema=False,
+        model,
+        optimizer,
+        path,
+        load_only_params=True,
+        ignore_modules=[],
+        is_distributed=False,
+        load_ema=False,
 ):
     state = torch.load(path, map_location="cpu")
     params = state["net"]
@@ -546,7 +472,7 @@ def load_checkpoint(
                 # strip prefix of DDP (module.), create a new OrderedDict that does not contain the prefix
                 for k in list(params[key].keys()):
                     if k.startswith("module."):
-                        params[key][k[len("module.") :]] = params[key][k]
+                        params[key][k[len("module."):]] = params[key][k]
                         del params[key][k]
             model_state_dict = model[key].state_dict()
             # 过滤出形状匹配的键值对
@@ -576,14 +502,15 @@ def load_checkpoint(
 
     return model, optimizer, epoch, iters
 
+
 def load_checkpoint2(
-    model,
-    optimizer,
-    path,
-    load_only_params=True,
-    ignore_modules=[],
-    is_distributed=False,
-    load_ema=False,
+        model,
+        optimizer,
+        path,
+        load_only_params=True,
+        ignore_modules=[],
+        is_distributed=False,
+        load_ema=False,
 ):
     state = torch.load(path, map_location="cpu")
     params = state["net"]
@@ -603,7 +530,7 @@ def load_checkpoint2(
                 # strip prefix of DDP (module.), create a new OrderedDict that does not contain the prefix
                 for k in list(params[key].keys()):
                     if k.startswith("module."):
-                        params[key][k[len("module.") :]] = params[key][k]
+                        params[key][k[len("module."):]] = params[key][k]
                         del params[key][k]
             model_state_dict = model.models[key].state_dict()
             # 过滤出形状匹配的键值对
@@ -620,7 +547,7 @@ def load_checkpoint2(
             print("%s loaded" % key)
             model.models[key].load_state_dict(filtered_state_dict, strict=False)
     model.eval()
-#     _ = [model[key].eval() for key in model]
+    #     _ = [model[key].eval() for key in model]
 
     if not load_only_params:
         epoch = state["epoch"] + 1
@@ -633,6 +560,7 @@ def load_checkpoint2(
         iters = 0
 
     return model, optimizer, epoch, iters
+
 
 def recursive_munch(d):
     if isinstance(d, dict):
