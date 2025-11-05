@@ -8,6 +8,7 @@ import os
 import json
 from pathlib import Path
 from typing import Optional, Union, Dict
+from loguru import logger
 
 import torch
 import torch.nn as nn
@@ -462,10 +463,10 @@ class BigVGAN(
 
         # Download and load pretrained generator weight
         if os.path.isdir(model_id):
-            print("Loading weights from local directory")
+            logger.debug(f"Loading weights from local directory, {model_id}")
             model_file = os.path.join(model_id, "bigvgan_generator.pt")
         else:
-            print(f"Loading weights from {model_id}")
+            logger.debug(f"Loading weights from {model_id}")
             model_file = hf_hub_download(
                 repo_id=model_id,
                 filename="bigvgan_generator.pt",

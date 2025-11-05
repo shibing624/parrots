@@ -305,7 +305,7 @@ def load_checkpoint(
                     if k.startswith("module."):
                         params[key][k[len("module.") :]] = params[key][k]
                         del params[key][k]
-            print("%s loaded" % key)
+            # print("%s loaded" % key)
             model[key].load_state_dict(params[key], strict=True)
     _ = [model[key].eval() for key in model]
 

@@ -485,10 +485,10 @@ class IndexTTS2:
             logger.debug(f"     Consider updating the BPE model or modifying the text to avoid unknown tokens.")
 
         if verbose:
-            logger.info("text_tokens_list:", text_tokens_list)
-            logger.info("segments count:", segments_count)
-            logger.info("max_text_tokens_per_segment:", max_text_tokens_per_segment)
-            logger.info(*segments, sep="\n")
+            logger.info(f"text_tokens_list: {text_tokens_list}")
+            logger.info(f"segments count: {segments_count}")
+            logger.info(f"max_text_tokens_per_segment: {max_text_tokens_per_segment}")
+            logger.info(f"segments:\n{chr(10).join(str(seg) for seg in segments)}")
         top_p = generation_kwargs.pop("top_p", 0.8)
         top_k = generation_kwargs.pop("top_k", 30)
         temperature = generation_kwargs.pop("temperature", 0.8)
@@ -513,7 +513,7 @@ class IndexTTS2:
             text_tokens = self.tokenizer.convert_tokens_to_ids(sent)
             text_tokens = torch.tensor(text_tokens, dtype=torch.int32, device=self.device).unsqueeze(0)
             if verbose:
-                logger.info(text_tokens)
+                logger.info(f"text_tokens: {text_tokens}")
                 logger.info(f"text_tokens shape: {text_tokens.shape}, text_tokens type: {text_tokens.dtype}")
                 # debug tokenizer
                 text_token_syms = self.tokenizer.convert_ids_to_tokens(text_tokens[0].tolist())
@@ -577,7 +577,7 @@ class IndexTTS2:
                 code_lens = torch.LongTensor(code_lens)
                 code_lens = code_lens.to(self.device)
                 if verbose:
-                    logger.info(codes, type(codes))
+                    logger.info(f"codes: {codes}, type: {type(codes)}")
                     logger.info(f"fix codes shape: {codes.shape}, codes type: {codes.dtype}")
                     logger.info(f"code len: {code_lens}")
 
@@ -657,7 +657,7 @@ class IndexTTS2:
             # 直接保存音频到指定路径中
             if os.path.isfile(output_path):
                 os.remove(output_path)
-                logger.info("remove old wav file:", output_path)
+                logger.info(f"remove old wav file: {output_path}")
             if os.path.dirname(output_path) != "":
                 os.makedirs(os.path.dirname(output_path), exist_ok=True)
             torchaudio.save(output_path, wav.type(torch.int16), sampling_rate)

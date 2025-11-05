@@ -11,6 +11,7 @@ from typing import Dict, Optional, Union
 
 import torch
 import torch.nn as nn
+from loguru import logger
 from huggingface_hub import PyTorchModelHubMixin, hf_hub_download
 from torch.nn import Conv1d, ConvTranspose1d
 from torch.nn.utils import remove_weight_norm, weight_norm
@@ -473,7 +474,7 @@ class BigVGAN(
 
         # Download and load hyperparameters (h) used by BigVGAN
         if os.path.isdir(model_id):
-            print("Loading config.json from local directory")
+            logger.debug(f"Loading config.json from local directory, model: {model_id}")
             config_file = os.path.join(model_id, "config.json")
         else:
             config_file = hf_hub_download(
@@ -504,10 +505,10 @@ class BigVGAN(
 
         # Download and load pretrained generator weight
         if os.path.isdir(model_id):
-            print("Loading weights from local directory")
+            logger.debug("Loading weights from local directory")
             model_file = os.path.join(model_id, "bigvgan_generator.pt")
         else:
-            print(f"Loading weights from {model_id}")
+            logger.debug(f"Loading weights from {model_id}")
             model_file = hf_hub_download(
                 repo_id=model_id,
                 filename="bigvgan_generator.pt",
