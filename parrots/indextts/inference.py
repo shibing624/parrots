@@ -9,7 +9,7 @@ from torch.nn.utils.rnn import pad_sequence
 import torch.nn.functional as F
 from transformers import AutoTokenizer, SeamlessM4TFeatureExtractor
 from transformers import AutoModelForCausalLM
-from huggingface_hub import hf_hub_download
+from huggingface_hub import hf_hub_download, snapshot_download
 import safetensors
 import yaml
 import random
@@ -71,11 +71,9 @@ class IndexTTS2:
         logger.debug(f"Using device: {self.device}, use_fp16: {self.use_fp16}, use_cuda: {self.use_cuda}")
         # Handle model directory and config loading
         if model_dir is None:
-            # Download from HuggingFace if model_dir is not specified
-            from huggingface_hub import snapshot_download
-            logger.info(f"Downloading models from HuggingFace. This may take a while...")
+            # logger.info(f"Downloading models from HuggingFace. This may take a while...")
             model_dir = snapshot_download(repo_id="IndexTeam/IndexTTS-2")
-            logger.info(f"Models downloaded from HuggingFace to: {model_dir}")
+            logger.info(f"Models loaded from HuggingFace model, local path: {model_dir}")
 
         self.model_dir = model_dir
 
