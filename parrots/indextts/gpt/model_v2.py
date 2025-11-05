@@ -7,7 +7,6 @@ from loguru import logger
 
 from transformers import GPT2Config, LogitsProcessorList
 from parrots.indextts.gpt.transformers_gpt2 import GPT2PreTrainedModel
-# from transformers import GPT2PreTrainedModel
 from transformers.modeling_outputs import CausalLMOutputWithCrossAttentions
 from transformers.utils.model_parallel_utils import (assert_device_map,
                                                      get_device_map)
@@ -673,133 +672,6 @@ class UnifiedVoice(nn.Module):
         fake_inputs[:, -1] = self.start_mel_token
         return fake_inputs, batched_mel_emb, attention_mask
 
-    def _custom_generate(
-            self,
-            input_ids: torch.Tensor,
-            attention_mask: torch.Tensor,
-            max_length: int,
-            temperature: float = 1.0,
-            do_sample: bool = True,
-            top_k: int = 50,
-            top_p: float = 1.0,
-            num_return_sequences: int = 1,
-            pad_token_id: int = None,
-            eos_token_id: int = None,
-            bos_token_id: int = None,
-            logits_processor: LogitsProcessorList = None,
-    ):
-        """
-        自定义生成方法，替代 transformers 的 generate 方法
-        
-        Args:
-            input_ids: 输入的 token ids，形状为 (batch_size, seq_len)
-            attention_mask: 注意力掩码，形状为 (batch_size, seq_len)
-            max_length: 生成的最大长度
-            temperature: 温度参数，控制生成的随机性
-            do_sample: 是否使用采样
-            top_k: top-k 采样参数
-            top_p: top-p (nucleus) 采样参数
-            num_return_sequences: 返回的序列数量
-            pad_token_id: padding token id
-            eos_token_id: 结束 token id
-            bos_token_id: 开始 token id
-            logits_processor: logits 处理器列表
-            
-        Returns:
-            生成的 token ids，形状为 (batch_size * num_return_sequences, generated_length)
-        """
-        batch_size = input_ids.shape[0]
-        device = input_ids.device
-        
-        # 如果需要多个返回序列，扩展输入
-        if num_return_sequences > 1:
-            input_ids = input_ids.repeat_interleave(num_return_sequences, dim=0)
-            attention_mask = attention_mask.repeat_interleave(num_return_sequences, dim=0)
-        
-        # 初始化
-        unfinished_sequences = torch.ones(input_ids.shape[0], dtype=torch.long, device=device)
-        past_key_values = None
-        cur_len = input_ids.shape[1]
-        
-        # 生成循环
-        while cur_len < max_length:
-            # 准备模型输入
-            model_inputs = self.inference_model.prepare_inputs_for_generation(
-                input_ids, past_key_values=past_key_values, attention_mask=attention_mask
-            )
-            
-            # 前向传播
-            outputs = self.inference_model(
-                **model_inputs,
-                return_dict=True,
-                use_cache=True,
-            )
-            
-            # 获取下一个 token 的 logits
-            next_token_logits = outputs.logits[:, -1, :].float()
-            
-            # 应用 logits 处理器
-            if logits_processor is not None:
-                next_token_logits = logits_processor(input_ids, next_token_logits)
-            
-            # 应用温度
-            if temperature != 1.0:
-                next_token_logits = next_token_logits / temperature
-            
-            # 选择下一个 token
-            if do_sample:
-                # 应用 top-k 过滤
-                if top_k > 0:
-                    indices_to_remove = next_token_logits < torch.topk(next_token_logits, top_k)[0][..., -1, None]
-                    next_token_logits[indices_to_remove] = float('-inf')
-                
-                # 应用 top-p (nucleus) 过滤
-                if top_p < 1.0:
-                    sorted_logits, sorted_indices = torch.sort(next_token_logits, descending=True)
-                    cumulative_probs = torch.cumsum(F.softmax(sorted_logits, dim=-1), dim=-1)
-                    
-                    # 移除累积概率超过 top_p 的 tokens
-                    sorted_indices_to_remove = cumulative_probs > top_p
-                    # 保留第一个超过阈值的 token
-                    sorted_indices_to_remove[..., 1:] = sorted_indices_to_remove[..., :-1].clone()
-                    sorted_indices_to_remove[..., 0] = 0
-                    
-                    # 将过滤后的 indices 映射回原始 logits
-                    indices_to_remove = sorted_indices_to_remove.scatter(1, sorted_indices, sorted_indices_to_remove)
-                    next_token_logits[indices_to_remove] = float('-inf')
-                
-                # 采样
-                probs = F.softmax(next_token_logits, dim=-1)
-                next_tokens = torch.multinomial(probs, num_samples=1).squeeze(1)
-            else:
-                # 贪婪解码
-                next_tokens = torch.argmax(next_token_logits, dim=-1)
-            
-            # 更新未完成的序列
-            if eos_token_id is not None:
-                next_tokens = next_tokens * unfinished_sequences + pad_token_id * (1 - unfinished_sequences)
-            
-            # 拼接新生成的 token
-            input_ids = torch.cat([input_ids, next_tokens.unsqueeze(-1)], dim=-1)
-            
-            # 更新 attention mask
-            attention_mask = F.pad(attention_mask, (0, 1), value=1)
-            
-            # 更新 past_key_values
-            past_key_values = outputs.past_key_values
-            
-            # 检查是否有序列完成
-            if eos_token_id is not None:
-                unfinished_sequences = unfinished_sequences.mul((next_tokens != eos_token_id).long())
-            
-            # 如果所有序列都完成了，停止生成
-            if unfinished_sequences.max() == 0:
-                break
-            
-            cur_len += 1
-        
-        return input_ids
-
     def inference_speech(self, speech_condition, text_inputs, emo_speech_condition=None, cond_lengths=None,
                          emo_cond_lengths=None, emo_vec=None, use_speed=False, input_tokens=None,
                          num_return_sequences=1,
@@ -864,7 +736,7 @@ class UnifiedVoice(nn.Module):
             min_tokens_to_keep = 2 if hf_generate_kwargs.get("num_beams", 1) > 1 else 1
             logits_processor.append(TypicalLogitsWarper(mass=typical_mass, min_tokens_to_keep=min_tokens_to_keep))
         max_length = (
-                    trunc_index + self.max_mel_tokens - 1) if max_generate_length is None else trunc_index + max_generate_length
+                trunc_index + self.max_mel_tokens - 1) if max_generate_length is None else trunc_index + max_generate_length
 
         # Use accel engine if available (single sequence only)
         if self.accel_engine is not None and num_return_sequences == 1:
@@ -879,22 +751,12 @@ class UnifiedVoice(nn.Module):
                 tts_text_pos_embedding=self.inference_model.text_pos_embedding,  # text_pos_embedding layer
             )
         else:
-            # 使用自定义生成方法替代 generate
-            output = self._custom_generate(
-                input_ids=inputs,
-                attention_mask=attention_mask,
-                max_length=max_length,
-                temperature=hf_generate_kwargs.get('temperature', 1.0),
-                do_sample=hf_generate_kwargs.get('do_sample', True),
-                top_k=hf_generate_kwargs.get('top_k', 50),
-                top_p=hf_generate_kwargs.get('top_p', 1.0),
-                num_return_sequences=num_return_sequences,
-                pad_token_id=self.stop_mel_token,
-                eos_token_id=self.stop_mel_token,
-                bos_token_id=self.start_mel_token,
-                logits_processor=logits_processor if len(logits_processor) > 0 else None,
-            )
-        
+            output = self.inference_model.generate(inputs,
+                                                   bos_token_id=self.start_mel_token, pad_token_id=self.stop_mel_token,
+                                                   eos_token_id=self.stop_mel_token, attention_mask=attention_mask,
+                                                   max_length=max_length, logits_processor=logits_processor,
+                                                   num_return_sequences=num_return_sequences,
+                                                   **hf_generate_kwargs)
         if isinstance(output, torch.Tensor):
             return output[:, trunc_index:], speech_conditioning_latent
         # GenerateOutput
