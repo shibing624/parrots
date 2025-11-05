@@ -4,10 +4,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-import transformers
 from transformers import GPT2Config, LogitsProcessorList
-from parrots.indextts.gpt.transformers_gpt2 import GPT2PreTrainedModel, GPT2Model
-
+# from parrots.indextts.gpt.transformers_gpt2 import GPT2PreTrainedModel, GPT2Model
+from transformers import GPT2PreTrainedModel, GPT2Model
 from transformers.modeling_outputs import CausalLMOutputWithCrossAttentions
 from transformers.utils.model_parallel_utils import (assert_device_map,
                                                      get_device_map)

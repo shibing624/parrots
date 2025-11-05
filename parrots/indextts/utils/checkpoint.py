@@ -12,11 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import datetime
-import logging
 import os
 import re
-from collections import OrderedDict
 
 import torch
 import yaml

@@ -8,11 +8,10 @@ import torchaudio
 from torch.nn.utils.rnn import pad_sequence
 
 import warnings
+import yaml
 
 warnings.filterwarnings("ignore", category=FutureWarning)
 warnings.filterwarnings("ignore", category=UserWarning)
-
-from omegaconf import OmegaConf
 
 from parrots.indextts.gpt.model_v2 import UnifiedVoice
 from parrots.indextts.utils.maskgct_utils import build_semantic_model, build_semantic_codec
@@ -24,23 +23,21 @@ from parrots.indextts.s2mel.modules.bigvgan import bigvgan
 from parrots.indextts.s2mel.modules.campplus.DTDNN import CAMPPlus
 from parrots.indextts.s2mel.modules.audio import mel_spectrogram
 
-from transformers import AutoTokenizer
+from transformers import AutoTokenizer, SeamlessM4TFeatureExtractor
 from modelscope import AutoModelForCausalLM
 from huggingface_hub import hf_hub_download
 import safetensors
-from transformers import SeamlessM4TFeatureExtractor
 import random
 import torch.nn.functional as F
 
 
 class IndexTTS2:
     def __init__(
-            self, cfg_path="checkpoints/config.yaml", model_dir="checkpoints", use_fp16=False, device=None, **kwargs
+            self, model_dir=None, use_fp16=False, device=None, **kwargs
     ):
         """
         Args:
-            cfg_path (str): path to the config file.
-            model_dir (str): path to the model directory.
+            model_dir (str): path to the model directory. If None, models will be downloaded from HuggingFace.
             use_fp16 (bool): whether to use fp16.
             device (str): device to use (e.g., 'cuda:0', 'cpu'). If None, it will be set automatically based on the availability of CUDA or MPS.
         """
@@ -63,15 +60,30 @@ class IndexTTS2:
             self.use_fp16 = False
             print(">> Be patient, it may take a while to run in CPU mode.")
 
-        self.cfg = OmegaConf.load(cfg_path)
+        # Handle model directory and config loading
+        if model_dir is None:
+            # Download from HuggingFace if model_dir is not specified
+            from huggingface_hub import snapshot_download
+            model_dir = snapshot_download(repo_id="IndexTeam/IndexTTS-2")
+            print(f">> Models downloaded from HuggingFace to: {model_dir}")
+        
         self.model_dir = model_dir
+        
+        # Load configuration from model_dir
+        cfg_path = os.path.join(self.model_dir, "config.yaml")
+        if not os.path.exists(cfg_path):
+            raise FileNotFoundError(f"Config file not found at {cfg_path}. "
+                                  f"Please ensure model_dir contains the required config.yaml file.")
+        
+        with open(cfg_path, 'r', encoding='utf-8') as f:
+            self.cfg = yaml.safe_load(f)
         self.dtype = torch.float16 if self.use_fp16 else None
-        self.stop_mel_token = self.cfg.gpt.stop_mel_token
+        self.stop_mel_token = self.cfg['gpt']['stop_mel_token']
 
-        self.qwen_emo = QwenEmotion(os.path.join(self.model_dir, self.cfg.qwen_emo_path))
+        self.qwen_emo = QwenEmotion(os.path.join(self.model_dir, self.cfg['qwen_emo_path']))
 
-        self.gpt = UnifiedVoice(**self.cfg.gpt, use_accel=False)
-        self.gpt_path = os.path.join(self.model_dir, self.cfg.gpt_checkpoint)
+        self.gpt = UnifiedVoice(**self.cfg['gpt'], use_accel=False)
+        self.gpt_path = os.path.join(self.model_dir, self.cfg['gpt_checkpoint'])
         load_checkpoint(self.gpt, self.gpt_path)
         self.gpt = self.gpt.to(self.device)
         if self.use_fp16:
@@ -84,21 +96,21 @@ class IndexTTS2:
 
         self.extract_features = SeamlessM4TFeatureExtractor.from_pretrained("facebook/w2v-bert-2.0")
         self.semantic_model, self.semantic_mean, self.semantic_std = build_semantic_model(
-            os.path.join(self.model_dir, self.cfg.w2v_stat))
+            os.path.join(self.model_dir, self.cfg['w2v_stat']))
         self.semantic_model = self.semantic_model.to(self.device)
         self.semantic_model.eval()
         self.semantic_mean = self.semantic_mean.to(self.device)
         self.semantic_std = self.semantic_std.to(self.device)
 
-        semantic_codec = build_semantic_codec(self.cfg.semantic_codec)
+        semantic_codec = build_semantic_codec(self.cfg['semantic_codec'])
         semantic_code_ckpt = hf_hub_download("amphion/MaskGCT", filename="semantic_codec/model.safetensors")
         safetensors.torch.load_model(semantic_codec, semantic_code_ckpt)
         self.semantic_codec = semantic_codec.to(self.device)
         self.semantic_codec.eval()
         print('>> semantic_codec weights restored from: {}'.format(semantic_code_ckpt))
 
-        s2mel_path = os.path.join(self.model_dir, self.cfg.s2mel_checkpoint)
-        s2mel = MyModel(self.cfg.s2mel, use_gpt_latent=True)
+        s2mel_path = os.path.join(self.model_dir, self.cfg['s2mel_checkpoint'])
+        s2mel = MyModel(self.cfg['s2mel'], use_gpt_latent=True)
         s2mel, _, _, _ = load_checkpoint2(
             s2mel,
             None,
@@ -122,38 +134,38 @@ class IndexTTS2:
         self.campplus_model.eval()
         print(">> campplus_model weights restored from:", campplus_ckpt_path)
 
-        bigvgan_name = self.cfg.vocoder.name
+        bigvgan_name = self.cfg['vocoder']['name']
         self.bigvgan = bigvgan.BigVGAN.from_pretrained(bigvgan_name, use_cuda_kernel=use_cuda)
         self.bigvgan = self.bigvgan.to(self.device)
         self.bigvgan.remove_weight_norm()
         self.bigvgan.eval()
         print(">> bigvgan weights restored from:", bigvgan_name)
 
-        self.bpe_path = os.path.join(self.model_dir, self.cfg.dataset["bpe_model"])
+        self.bpe_path = os.path.join(self.model_dir, self.cfg['dataset']['bpe_model'])
         self.normalizer = TextNormalizer()
         self.normalizer.load()
         print(">> TextNormalizer loaded")
         self.tokenizer = TextTokenizer(self.bpe_path, self.normalizer)
         print(">> bpe model loaded from:", self.bpe_path)
 
-        emo_matrix = torch.load(os.path.join(self.model_dir, self.cfg.emo_matrix))
+        emo_matrix = torch.load(os.path.join(self.model_dir, self.cfg['emo_matrix']))
         self.emo_matrix = emo_matrix.to(self.device)
-        self.emo_num = list(self.cfg.emo_num)
+        self.emo_num = list(self.cfg['emo_num'])
 
-        spk_matrix = torch.load(os.path.join(self.model_dir, self.cfg.spk_matrix))
+        spk_matrix = torch.load(os.path.join(self.model_dir, self.cfg['spk_matrix']))
         self.spk_matrix = spk_matrix.to(self.device)
 
         self.emo_matrix = torch.split(self.emo_matrix, self.emo_num)
         self.spk_matrix = torch.split(self.spk_matrix, self.emo_num)
 
         mel_fn_args = {
-            "n_fft": self.cfg.s2mel['preprocess_params']['spect_params']['n_fft'],
-            "win_size": self.cfg.s2mel['preprocess_params']['spect_params']['win_length'],
-            "hop_size": self.cfg.s2mel['preprocess_params']['spect_params']['hop_length'],
-            "num_mels": self.cfg.s2mel['preprocess_params']['spect_params']['n_mels'],
-            "sampling_rate": self.cfg.s2mel["preprocess_params"]["sr"],
-            "fmin": self.cfg.s2mel['preprocess_params']['spect_params'].get('fmin', 0),
-            "fmax": None if self.cfg.s2mel['preprocess_params']['spect_params'].get('fmax', "None") == "None" else 8000,
+            "n_fft": self.cfg['s2mel']['preprocess_params']['spect_params']['n_fft'],
+            "win_size": self.cfg['s2mel']['preprocess_params']['spect_params']['win_length'],
+            "hop_size": self.cfg['s2mel']['preprocess_params']['spect_params']['hop_length'],
+            "num_mels": self.cfg['s2mel']['preprocess_params']['spect_params']['n_mels'],
+            "sampling_rate": self.cfg['s2mel']['preprocess_params']['sr'],
+            "fmin": self.cfg['s2mel']['preprocess_params']['spect_params'].get('fmin', 0),
+            "fmax": None if self.cfg['s2mel']['preprocess_params']['spect_params'].get('fmax', 'None') == 'None' else 8000,
             "center": False
         }
         self.mel_fn = lambda x: mel_spectrogram(x, **mel_fn_args)
@@ -169,7 +181,7 @@ class IndexTTS2:
 
         # 进度引用显示（可选）
         self.gr_progress = None
-        self.model_version = self.cfg.version if hasattr(self.cfg, "version") else None
+        self.model_version = self.cfg.get('version', None)
 
     @torch.no_grad()
     def get_emb(self, input_features, attention_mask):
@@ -547,12 +559,6 @@ class IndexTTS2:
                     )
                     has_warned = True
 
-                code_lens = torch.tensor([codes.shape[-1]], device=codes.device, dtype=codes.dtype)
-                #                 if verbose:
-                #                     print(codes, type(codes))
-                #                     print(f"codes shape: {codes.shape}, codes type: {codes.dtype}")
-                #                     print(f"code len: {code_lens}")
-
                 code_lens = []
                 max_code_len = 0
                 for code in codes:
@@ -791,7 +797,6 @@ if __name__ == "__main__":
     prompt_wav = "examples/voice_01.wav"
     text = '欢迎大家来体验indextts2，并给予我们意见与反馈，谢谢大家。'
     tts = IndexTTS2(
-        cfg_path="checkpoints/config.yaml", 
         model_dir="checkpoints"
     )
     tts.infer(spk_audio_prompt=prompt_wav, text=text, output_path="gen.wav", verbose=True)

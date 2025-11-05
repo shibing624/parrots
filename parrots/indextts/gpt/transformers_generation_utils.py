@@ -29,8 +29,12 @@ from transformers.cache_utils import (
     Cache,
     DynamicCache,
     EncoderDecoderCache,
+    HQQQuantizedCache,
     OffloadedCache,
-    QuantizedCacheConfig,
+    QuantizedCache,
+    QuantoQuantizedCache,
+    SinkCache,
+    SlidingWindowCache,
     StaticCache,
 )
 from transformers.configuration_utils import PretrainedConfig
@@ -55,13 +59,10 @@ from transformers.generation.candidate_generator import (
     AssistedCandidateGeneratorDifferentTokenizers,
     CandidateGenerator,
     PromptLookupCandidateGenerator,
-    _crop_past_key_values,
     _prepare_attention_mask,
     _prepare_token_type_ids,
 )
 from transformers.generation.configuration_utils import (
-    NEED_SETUP_CACHE_CLASSES_MAPPING,
-    QUANT_BACKEND_CLASSES_MAPPING,
     GenerationConfig,
     GenerationMode,
 )
@@ -113,6 +114,47 @@ logger = logging.get_logger(__name__)
 
 if is_accelerate_available():
     from accelerate.hooks import AlignDevicesHook, add_hook_to_module
+
+
+# Define cache mappings for compatibility with newer transformers versions
+# These were previously imported from transformers.generation.configuration_utils
+NEED_SETUP_CACHE_CLASSES_MAPPING = {
+    "static": StaticCache,
+    "sliding_window": SlidingWindowCache,
+    "sink": SinkCache,
+    "offloaded": OffloadedCache,
+}
+
+QUANT_BACKEND_CLASSES_MAPPING = {
+    "quanto": QuantoQuantizedCache,
+    "HQQ": HQQQuantizedCache,
+}
+
+
+# Helper function to replace deprecated _crop_past_key_values
+def _crop_past_key_values(model, past_key_values, max_length):
+    """
+    Crop past key values to a maximum length.
+    In newer transformers versions, use Cache.crop() method instead.
+    """
+    if past_key_values is None:
+        return None
+    
+    # Check if past_key_values is a Cache object (new transformers API)
+    if isinstance(past_key_values, Cache):
+        past_key_values.crop(max_length)
+        return past_key_values
+    
+    # Handle legacy tuple format
+    if isinstance(past_key_values, tuple):
+        return tuple(
+            [
+                (layer_past[0][:, :, :max_length, :], layer_past[1][:, :, :max_length, :])
+                for layer_past in past_key_values
+            ]
+        )
+    
+    return past_key_values
 
 
 @dataclass
@@ -1745,7 +1787,7 @@ class GenerationMixin:
                 cache_config = (
                     generation_config.cache_config
                     if generation_config.cache_config is not None
-                    else QuantizedCacheConfig()
+                    else QuantizedCache()
                 )
                 cache_class = QUANT_BACKEND_CLASSES_MAPPING[cache_config.backend]
 
