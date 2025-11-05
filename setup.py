@@ -13,7 +13,7 @@ if os.path.exists("README.md"):
 
 setup(
     name='parrots',
-    version='1.2.0',
+    version='1.2.1',
     description='Parrots, Automatic Speech Recognition(**ASR**), Text-To-Speech(**TTS**) toolkit',
     long_description=readme,
     long_description_content_type='text/markdown',
@@ -51,6 +51,12 @@ setup(
         'soundfile',
         'fire',
         'tqdm',
+        'descript-audiotools',
+        'torchaudio',
+        'munch',
+        'wetext',
+        'pandas',
+        'sentencepiece',
     ],
     packages=find_packages(exclude=['tests']),
     package_dir={'parrots': 'parrots'},

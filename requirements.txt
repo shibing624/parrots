@@ -7,15 +7,14 @@ librosa
 nltk
 g2p_en
 cn2an
-descript-audiotools
 zh-normalization
 einops
 soundfile
 fire
 tqdm
+descript-audiotools
 torchaudio
 munch
-textstat
 wetext
 pandas
 sentencepiece
