@@ -35,7 +35,7 @@ import torch.nn.functional as F
 
 class IndexTTS2:
     def __init__(
-            self, cfg_path="checkpoints/config.yaml", model_dir="checkpoints", use_fp16=False, device=None
+            self, cfg_path="checkpoints/config.yaml", model_dir="checkpoints", use_fp16=False, device=None, **kwargs
     ):
         """
         Args:
@@ -44,12 +44,14 @@ class IndexTTS2:
             use_fp16 (bool): whether to use fp16.
             device (str): device to use (e.g., 'cuda:0', 'cpu'). If None, it will be set automatically based on the availability of CUDA or MPS.
         """
+        use_cuda = False
         if device is not None:
             self.device = device
             self.use_fp16 = False if device == "cpu" else use_fp16
         elif torch.cuda.is_available():
             self.device = "cuda:0"
             self.use_fp16 = use_fp16
+            use_cuda = True
         elif hasattr(torch, "xpu") and torch.xpu.is_available():
             self.device = "xpu"
             self.use_fp16 = use_fp16
@@ -121,7 +123,7 @@ class IndexTTS2:
         print(">> campplus_model weights restored from:", campplus_ckpt_path)
 
         bigvgan_name = self.cfg.vocoder.name
-        self.bigvgan = bigvgan.BigVGAN.from_pretrained(bigvgan_name, use_cuda_kernel=False)
+        self.bigvgan = bigvgan.BigVGAN.from_pretrained(bigvgan_name, use_cuda_kernel=use_cuda)
         self.bigvgan = self.bigvgan.to(self.device)
         self.bigvgan.remove_weight_norm()
         self.bigvgan.eval()
