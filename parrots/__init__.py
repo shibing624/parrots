@@ -8,4 +8,5 @@ __version__ = '1.2.1'
 from parrots.asr import SpeechRecognition
 from parrots.pinyin2hanzi import Pinyin2Hanzi
 from parrots.tts import TextToSpeech
+from parrots import indextts
 from parrots.log import logger, set_log_level, add_file_logger, LOG_LEVEL

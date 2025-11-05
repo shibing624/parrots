@@ -13,7 +13,7 @@ if os.path.exists("README.md"):
 
 setup(
     name='parrots',
-    version='1.2.1',
+    version='1.2.2',
     description='Parrots, Automatic Speech Recognition(**ASR**), Text-To-Speech(**TTS**) toolkit',
     long_description=readme,
     long_description_content_type='text/markdown',
@@ -58,7 +58,15 @@ setup(
         'pandas',
         'sentencepiece',
     ],
-    packages=find_packages(exclude=['tests']),
+    packages=find_packages(exclude=['tests', 'examples', '*.ipynb_checkpoints', '*.__pycache__']),
     package_dir={'parrots': 'parrots'},
-    package_data={'parrots': ['*.*', 'data/*', 'data/pinyin2hanzi/*']}
+    package_data={
+        'parrots': ['*.*', 'data/*', 'data/pinyin2hanzi/*'],
+        'parrots.indextts': ['*.py', '*/*.py', '*/*/*.py', '*/*/*/*.py', '*/*/*/*/*.py'],
+        'parrots.indextts.gpt': ['*.py', '*/*.py'],
+        'parrots.indextts.BigVGAN': ['*.py', '*/*.py', '*/*/*.py'],
+        'parrots.indextts.utils': ['*.py', '*/*.py', '*/*/*.py', '*/*/*/*.py', '*/*/*/*/*.py'],
+        'parrots.indextts.s2mel': ['*.py', '*/*.py', '*/*/*.py'],
+    },
+    include_package_data=True,
 )
