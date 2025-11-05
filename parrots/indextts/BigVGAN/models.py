@@ -250,7 +250,7 @@ class BigVGAN(torch.nn.Module):
         return x, contrastive_loss
 
     def remove_weight_norm(self):
-        print('Removing weight norm...')
+        # print('Removing weight norm...')
         for l in self.ups:
             for l_i in l:
                 remove_weight_norm(l_i)

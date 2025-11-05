@@ -30,7 +30,7 @@ def chinese_path_compile_support(sources, buildpath):
     os.makedirs(ninja_compile_dir, exist_ok=True)
     new_buildpath = os.path.join(ninja_compile_dir, "build")
     os.makedirs(new_buildpath, exist_ok=True)
-    print(f"ninja_buildpath: {new_buildpath}")
+    # print(f"ninja_buildpath: {new_buildpath}")
     # Copy files to directory
     sources.clear()
     current_dir = os.path.dirname(__file__)

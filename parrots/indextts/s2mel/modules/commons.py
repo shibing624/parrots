@@ -486,7 +486,7 @@ def load_checkpoint(
                 print(
                     f"Warning: Skipped loading some keys due to shape mismatch: {skipped_keys}"
                 )
-            print("%s loaded" % key)
+            # print("%s loaded" % key)
             model[key].load_state_dict(filtered_state_dict, strict=False)
     _ = [model[key].eval() for key in model]
 
@@ -544,7 +544,7 @@ def load_checkpoint2(
                 print(
                     f"Warning: Skipped loading some keys due to shape mismatch: {skipped_keys}"
                 )
-            print("%s loaded" % key)
+            # print("%s loaded" % key)
             model.models[key].load_state_dict(filtered_state_dict, strict=False)
     model.eval()
     #     _ = [model[key].eval() for key in model]
