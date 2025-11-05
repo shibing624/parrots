@@ -32,7 +32,12 @@ Parrots, Automatic Speech Recognition(**ASR**), Text-To-Speech(**TTS**) toolkit,
 ## Features
 1. **ASR**：基于`distilwhisper`实现的中文语音识别（ASR）模型，支持中、英等多种语言
 2. **TTS**：基于`GPT-SoVITS`训练的语音合成（TTS）模型，支持中、英、日等多种语言
-3. **流式TTS**：支持流式语音合成，实现低延迟的实时语音输出
+3. **IndexTTS2**：集成了 IndexTTS2 模型，支持情感表达和时长控制的零样本语音合成
+   - 精确的语音时长控制
+   - 情感与说话人身份解耦，独立控制音色和情感
+   - 支持多种情感控制方式：音频参考、情感向量、文本描述
+   - 高度表现力的情感语音合成
+4. **流式TTS**：支持流式语音合成，实现低延迟的实时语音输出
 
 
 
@@ -88,7 +93,7 @@ output:
 
 ### TTS(Speech Synthesis)
 
-#### 基础用法
+#### GPT-SoVITS 基础用法
 example: [examples/demo_tts.py](https://github.com/shibing624/parrots/blob/master/examples/demo_tts.py)
 ```python
 from parrots import TextToSpeech
@@ -168,6 +173,130 @@ m.predict(
 )
 ```
 
+#### IndexTTS2 高级用法
+
+IndexTTS2 是一个突破性的情感表达和时长控制的自回归零样本语音合成模型。
+
+example: [examples/demo_indextts.py](https://github.com/shibing624/parrots/blob/master/examples/demo_indextts.py)
+
+**1. 基础语音克隆（使用单个参考音频）**
+
+```python
+from parrots.indextts import IndexTTS2
+
+tts = IndexTTS2()
+text = "你好，欢迎来到北京。这是一个合成录音文件的演示。"
+tts.infer(spk_audio_prompt='examples/voice_01.wav', text=text, output_path="gen.wav", verbose=True)
+```
+
+**2. 情感语音合成（使用情感参考音频）**
+
+使用单独的情感参考音频来控制语音合成的情感表达：
+
+```python
+from parrots.indextts import IndexTTS2
+
+tts = IndexTTS2()
+text = "酒楼丧尽天良，开始借机竞拍房间，哎，一群蠢货。"
+tts.infer(
+    spk_audio_prompt='examples/voice_07.wav',  # 说话人音色参考
+    text=text, 
+    output_path="gen.wav",
+    emo_audio_prompt="examples/emo_sad.wav",  # 情感参考音频
+    verbose=True
+)
+```
+
+**3. 调整情感强度**
+
+通过 `emo_alpha` 参数（范围 0.0-1.0）调整情感影响程度：
+
+```python
+from parrots.indextts import IndexTTS2
+
+tts = IndexTTS2()
+text = "酒楼丧尽天良，开始借机竞拍房间，哎，一群蠢货。"
+tts.infer(
+    spk_audio_prompt='examples/voice_07.wav',
+    text=text,
+    output_path="gen.wav",
+    emo_audio_prompt="examples/emo_sad.wav",
+    emo_alpha=0.6,  # 情感强度 60%
+    verbose=True
+)
+```
+
+**4. 使用情感向量控制**
+
+直接提供 8 维情感向量来精确控制情感，顺序为：
+`[开心, 生气, 悲伤, 害怕, 厌恶, 忧郁, 惊讶, 平静]`
+
+```python
+from parrots.indextts import IndexTTS2
+
+tts = IndexTTS2()
+text = "哇塞！这个爆率也太高了！欧皇附体了！"
+tts.infer(
+    spk_audio_prompt='examples/voice_10.wav',
+    text=text,
+    output_path="gen.wav",
+    emo_vector=[0, 0, 0, 0, 0, 0, 0.45, 0],  # 惊讶情感
+    use_random=False,
+    verbose=True
+)
+```
+
+**5. 基于文本的情感控制**
+
+启用 `use_emo_text` 可以根据文本内容自动推断情感：
+
+```python
+from parrots.indextts import IndexTTS2
+
+tts = IndexTTS2()
+text = "快躲起来！是他要来了！他要来抓我们了！"
+tts.infer(
+    spk_audio_prompt='examples/voice_12.wav',
+    text=text,
+    output_path="gen.wav",
+    emo_alpha=0.6,
+    use_emo_text=True,  # 启用文本情感分析
+    use_random=False,
+    verbose=True
+)
+```
+
+**6. 独立的情感文本描述**
+
+通过 `emo_text` 参数单独指定情感描述文本：
+
+```python
+from parrots.indextts import IndexTTS2
+
+tts = IndexTTS2()
+text = "快躲起来！是他要来了！他要来抓我们了！"
+emo_text = "你吓死我了！你是鬼吗？"  # 独立的情感描述
+tts.infer(
+    spk_audio_prompt='examples/voice_12.wav',
+    text=text,
+    output_path="gen.wav",
+    emo_alpha=0.6,
+    use_emo_text=True,
+    emo_text=emo_text,
+    use_random=False,
+    verbose=True
+)
+```
+
+**拼音控制说明：**
+
+IndexTTS2 支持中文字符和拼音的混合建模。当需要精确的发音控制时，请提供带有特定拼音标注的文本。
+注意：拼音控制不支持所有可能的声母-韵母组合，仅支持有效的中文拼音。
+
+示例：
+```python
+text = "之前你做DE5很好，所以这一次也DEI3做DE2很好才XING2，如果这次目标完成得不错的话，我们就直接打DI1去银行取钱。"
+```
 
 ### 命令行模式（CLI）
 
@@ -214,7 +343,17 @@ parrots tts "你好，欢迎来北京。welcome to the city." output_audio.wav
 
 ### ASR
 - [BELLE-2/Belle-distilwhisper-large-v2-zh](https://huggingface.co/BELLE-2/Belle-distilwhisper-large-v2-zh)
-### TTS
+
+### IndexTTS2
+- [IndexTeam/IndexTTS-2](https://huggingface.co/IndexTeam/IndexTTS-2) - 最新的情感表达和时长控制模型
+- [IndexTeam/IndexTTS-1.5](https://huggingface.co/IndexTeam/IndexTTS-1.5) - 改进的稳定性和英语性能
+- [IndexTeam/Index-TTS](https://huggingface.co/IndexTeam/Index-TTS) - 初始版本
+
+相关论文：
+- [IndexTTS2 Paper](https://arxiv.org/abs/2506.21619) - 情感表达和时长控制的突破
+- [IndexTTS Paper](https://arxiv.org/abs/2502.05512) - 工业级可控零样本 TTS
+
+### GPT-SoVITS TTS
 
 - [shibing624/parrots-gpt-sovits-speaker](https://huggingface.co/shibing624/parrots-gpt-sovits-speaker)
 
@@ -234,6 +373,15 @@ parrots tts "你好，欢迎来北京。welcome to the city." output_audio.wav
 | MaiMai | 卖卖| singing female anchor | 唱歌女主播声 | zh | 中 |
 
 ## 更新日志
+
+### v0.3.0 (2025-11)
+- 🔥 集成 IndexTTS2 模型，支持情感表达和时长控制的零样本语音合成
+- ✨ 支持多种情感控制方式：音频参考、情感向量、文本描述
+- ✨ 实现情感与说话人身份解耦，独立控制音色和情感
+- ✨ 支持拼音混合建模，实现精确发音控制
+- 🐛 修复 transformers 4.50+ 兼容性问题
+- 🐛 修复字典参数访问错误
+- 📝 新增 IndexTTS2 使用示例和文档
 
 ### v0.2.0 (2025-10)
 - ✨ 新增流式 TTS 功能，支持低延迟实时语音合成
@@ -256,7 +404,7 @@ parrots tts "你好，欢迎来北京。welcome to the city." output_audio.wav
 - 邮件我：xuming: xuming624@qq.com
 - 微信我：加我*微信号：xuming624*, 进Python-NLP交流群，备注：*姓名-公司名-NLP*
 
-<img src="docs/wechat.jpeg" width="200" />
+<img src="https://github.com/shibing624/parrots/blob/master/docs/wechat.jpeg" width="200" />
 
 
 ## Citation
@@ -293,6 +441,7 @@ parrots tts "你好，欢迎来北京。welcome to the city." output_audio.wav
 - [PaddlePaddle/PaddleSpeech](https://github.com/PaddlePaddle/PaddleSpeech)
 - [NVIDIA/NeMo](https://github.com/NVIDIA/NeMo)
 #### TTS(Speech Synthesis)
+- [IndexTeam/IndexTTS](https://github.com/index-tts/index-tts) - IndexTTS2 情感表达和时长控制
 - [coqui-ai/TTS](https://github.com/coqui-ai/TTS)
 - [keonlee9420/Expressive-FastSpeech2](https://github.com/keonlee9420/Expressive-FastSpeech2)
 - [TensorSpeech/TensorflowTTS](https://github.com/TensorSpeech/TensorflowTTS)

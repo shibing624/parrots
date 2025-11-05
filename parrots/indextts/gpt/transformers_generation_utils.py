@@ -1044,13 +1044,13 @@ class GenerationMixin:
                     device=device,
                 )
             )
-        if generation_config.forced_decoder_ids is not None:
+        if hasattr(generation_config, 'forced_decoder_ids') and generation_config.forced_decoder_ids is not None:
             # TODO (sanchit): move this exception to GenerationConfig.validate() when TF & FLAX are aligned with PT
             raise ValueError(
                 "You have explicitly specified `forced_decoder_ids`. Please remove the `forced_decoder_ids` argument "
                 "in favour of `input_ids` or `decoder_input_ids` respectively.",
             )
-        if generation_config.watermarking_config is not None:
+        if hasattr(generation_config, 'watermarking_config') and generation_config.watermarking_config is not None:
             processors.append(
                 generation_config.watermarking_config.construct_processor(self.config.vocab_size, device)
             )
@@ -2398,7 +2398,8 @@ class GenerationMixin:
 
         # Convert to legacy cache format if requested
         if (
-            generation_config.return_legacy_cache is not False  # Should check for `True` after v4.47
+            hasattr(generation_config, 'return_legacy_cache')
+            and generation_config.return_legacy_cache is not False  # Should check for `True` after v4.47
             and not is_torchdynamo_compiling()
             and hasattr(result, "past_key_values")
             and hasattr(result.past_key_values, "to_legacy_cache")

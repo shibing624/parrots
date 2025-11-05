@@ -6,7 +6,7 @@
 import sys
 
 sys.path.append('..')
-from parrots.indextts.infer import IndexTTS2
+from parrots.indextts.inference import IndexTTS2
 from parrots.log import set_log_level
 
 set_log_level("DEBUG")

@@ -8,7 +8,6 @@ import torchaudio
 from torch.nn.utils.rnn import pad_sequence
 import torch.nn.functional as F
 from transformers import AutoTokenizer, SeamlessM4TFeatureExtractor
-# from modelscope import AutoModelForCausalLM
 from transformers import AutoModelForCausalLM
 from huggingface_hub import hf_hub_download
 import safetensors
@@ -697,7 +696,7 @@ class QwenEmotion:
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_dir)
         self.model = AutoModelForCausalLM.from_pretrained(
             self.model_dir,
-            torch_dtype="float16",  # "auto"
+            dtype="auto",  # "auto", "bfloat16", "float16", "float32"
             device_map="auto"
         )
         self.prompt = "文本情感分类"

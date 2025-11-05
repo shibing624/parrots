@@ -32,7 +32,12 @@ Parrots, Automatic Speech Recognition(**ASR**), Text-To-Speech(**TTS**) toolkit,
 ## Features
 1. **ASR**: Automatic Speech Recognition based on `distilwhisper`, supporting Chinese, English, and other languages
 2. **TTS**: Text-to-Speech based on `GPT-SoVITS`, supporting Chinese, English, Japanese, and other languages
-3. **Streaming TTS**: Support for streaming speech synthesis with low latency for real-time audio output
+3. **IndexTTS2**: Integrated IndexTTS2 model for emotionally expressive and duration-controlled zero-shot speech synthesis
+   - Precise speech duration control
+   - Emotion and speaker identity disentanglement for independent control
+   - Multiple emotion control methods: audio reference, emotion vectors, text descriptions
+   - Highly expressive emotional speech synthesis
+4. **Streaming TTS**: Support for streaming speech synthesis with low latency for real-time audio output
 
 
 
@@ -88,7 +93,7 @@ output:
 
 ### TTS(Speech Synthesis)
 
-#### Basic Usage
+#### GPT-SoVITS Basic Usage
 example: [examples/demo_tts.py](https://github.com/shibing624/parrots/blob/master/examples/demo_tts.py)
 ```python
 from parrots import TextToSpeech
@@ -168,6 +173,131 @@ m.predict(
 )
 ```
 
+#### IndexTTS2 Advanced Usage
+
+IndexTTS2 is a breakthrough model for emotionally expressive and duration-controlled autoregressive zero-shot speech synthesis.
+
+example: [examples/demo_indextts.py](https://github.com/shibing624/parrots/blob/master/examples/demo_indextts.py)
+
+**1. Basic Voice Cloning (Single Reference Audio)**
+
+```python
+from parrots.indextts import IndexTTS2
+
+tts = IndexTTS2()
+text = "Hello, welcome to Beijing. This is a demo of synthesized audio."
+tts.infer(spk_audio_prompt='examples/voice_01.wav', text=text, output_path="gen.wav", verbose=True)
+```
+
+**2. Emotional Speech Synthesis (With Emotion Reference Audio)**
+
+Use a separate emotional reference audio to control the emotional expression:
+
+```python
+from parrots.indextts import IndexTTS2
+
+tts = IndexTTS2()
+text = "The tavern is unconscionable, starting to auction rooms, ah, a bunch of fools."
+tts.infer(
+    spk_audio_prompt='examples/voice_07.wav',  # Speaker timbre reference
+    text=text, 
+    output_path="gen.wav",
+    emo_audio_prompt="examples/emo_sad.wav",  # Emotion reference audio
+    verbose=True
+)
+```
+
+**3. Adjust Emotion Intensity**
+
+Control emotion influence with `emo_alpha` parameter (range 0.0-1.0):
+
+```python
+from parrots.indextts import IndexTTS2
+
+tts = IndexTTS2()
+text = "The tavern is unconscionable, starting to auction rooms, ah, a bunch of fools."
+tts.infer(
+    spk_audio_prompt='examples/voice_07.wav',
+    text=text,
+    output_path="gen.wav",
+    emo_audio_prompt="examples/emo_sad.wav",
+    emo_alpha=0.6,  # 60% emotion intensity
+    verbose=True
+)
+```
+
+**4. Emotion Vector Control**
+
+Directly provide an 8-dimensional emotion vector for precise control, in order:
+`[happy, angry, sad, afraid, disgusted, melancholic, surprised, calm]`
+
+```python
+from parrots.indextts import IndexTTS2
+
+tts = IndexTTS2()
+text = "Wow! This drop rate is so high! I'm blessed by luck!"
+tts.infer(
+    spk_audio_prompt='examples/voice_10.wav',
+    text=text,
+    output_path="gen.wav",
+    emo_vector=[0, 0, 0, 0, 0, 0, 0.45, 0],  # Surprised emotion
+    use_random=False,
+    verbose=True
+)
+```
+
+**5. Text-Based Emotion Control**
+
+Enable `use_emo_text` to automatically infer emotions from text content:
+
+```python
+from parrots.indextts import IndexTTS2
+
+tts = IndexTTS2()
+text = "Hide quickly! He's coming! He's coming to catch us!"
+tts.infer(
+    spk_audio_prompt='examples/voice_12.wav',
+    text=text,
+    output_path="gen.wav",
+    emo_alpha=0.6,
+    use_emo_text=True,  # Enable text emotion analysis
+    use_random=False,
+    verbose=True
+)
+```
+
+**6. Independent Emotion Text Description**
+
+Provide a separate emotion description via `emo_text` parameter:
+
+```python
+from parrots.indextts import IndexTTS2
+
+tts = IndexTTS2()
+text = "Hide quickly! He's coming! He's coming to catch us!"
+emo_text = "You scared me to death! Are you a ghost?"  # Independent emotion description
+tts.infer(
+    spk_audio_prompt='examples/voice_12.wav',
+    text=text,
+    output_path="gen.wav",
+    emo_alpha=0.6,
+    use_emo_text=True,
+    emo_text=emo_text,
+    use_random=False,
+    verbose=True
+)
+```
+
+**Pinyin Control Notes:**
+
+IndexTTS2 supports mixed modeling of Chinese characters and Pinyin. When precise pronunciation control is needed, provide text with specific Pinyin annotations.
+Note: Pinyin control only supports valid Chinese Pinyin combinations.
+
+Example:
+```python
+text = "之前你做DE5很好，所以这一次也DEI3做DE2很好才XING2，如果这次目标完成得不错的话，我们就直接打DI1去银行取钱。"
+```
+
 ### 命令行模式（CLI）
 
 支持通过命令行方式执行ARS和TTS任务，代码：[cli.py](https://github.com/shibing624/parrots/blob/master/parrots/cli.py)
@@ -209,6 +339,38 @@ parrots tts "你好，欢迎来北京。welcome to the city." output_audio.wav
 - 各二级命令使用方法见`parrots asr -h`
 - 上面示例中`examples/tushuguan.wav`是`asr`方法的`audio_file_path`参数，输入的音频文件（required）
 
+## Release Models
+
+### ASR
+- [BELLE-2/Belle-distilwhisper-large-v2-zh](https://huggingface.co/BELLE-2/Belle-distilwhisper-large-v2-zh)
+
+### IndexTTS2
+- [IndexTeam/IndexTTS-2](https://huggingface.co/IndexTeam/IndexTTS-2) - Latest emotion expression and duration control model
+- [IndexTeam/IndexTTS-1.5](https://huggingface.co/IndexTeam/IndexTTS-1.5) - Improved stability and English performance
+- [IndexTeam/Index-TTS](https://huggingface.co/IndexTeam/Index-TTS) - Initial version
+
+Related Papers:
+- [IndexTTS2 Paper](https://arxiv.org/abs/2506.21619) - Breakthrough in emotion expression and duration control
+- [IndexTTS Paper](https://arxiv.org/abs/2502.05512) - Industrial-level controllable zero-shot TTS
+
+### GPT-SoVITS TTS
+
+- [shibing624/parrots-gpt-sovits-speaker](https://huggingface.co/shibing624/parrots-gpt-sovits-speaker)
+
+| speaker name | 说话人名 | character | 角色特点 | language | 语言 |
+|--|--|--|--|--|--|
+| KuileBlanc | 葵·勒布朗 | lady | 标准美式女声 | en | 英 |
+| LongShouRen | 龙守仁 | gentleman | 标准美式男声 | en | 英 |
+| MaiMai | 卖卖| singing female anchor | 唱歌女主播声 | zh | 中 |
+| XingTong | 星瞳 | singing ai girl | 活泼女声 | zh | 中 |
+| XuanShen | 炫神 | game male anchor | 游戏男主播声 | zh | 中 |
+| KusanagiNene | 草薙寧々 | loli | 萝莉女学生声 | ja | 日 |
+
+- [shibing624/parrots-gpt-sovits-speaker-maimai](https://huggingface.co/shibing624/parrots-gpt-sovits-speaker-maimai)
+
+| speaker name | 说话人名 | character | 角色特点 | language | 语言 |
+|--|--|--|--|--|--|
+| MaiMai | 卖卖| singing female anchor | 唱歌女主播声 | zh | 中 |
 
 ## Contact
 
@@ -253,14 +415,22 @@ parrots tts "你好，欢迎来北京。welcome to the city." output_audio.wav
 - [PaddlePaddle/PaddleSpeech](https://github.com/PaddlePaddle/PaddleSpeech)
 - [NVIDIA/NeMo](https://github.com/NVIDIA/NeMo)
 #### TTS(Speech Synthesis)
+- [IndexTeam/IndexTTS](https://github.com/index-tts/index-tts) - IndexTTS2 emotion expression and duration control
 - [coqui-ai/TTS](https://github.com/coqui-ai/TTS)
 - [keonlee9420/Expressive-FastSpeech2](https://github.com/keonlee9420/Expressive-FastSpeech2)
 - [TensorSpeech/TensorflowTTS](https://github.com/TensorSpeech/TensorflowTTS)
 - [RVC-Boss/GPT-SoVITS](https://github.com/RVC-Boss/GPT-SoVITS)
 
-| MaiMai | 卖卖| singing female anchor | 唱歌女主播声 | zh | 中 |
-
 ## Changelog
+
+### v0.3.0 (2025-11)
+- 🔥 Integrated IndexTTS2 model for emotionally expressive and duration-controlled zero-shot speech synthesis
+- ✨ Support multiple emotion control methods: audio reference, emotion vectors, text descriptions
+- ✨ Implemented emotion and speaker identity disentanglement for independent control
+- ✨ Support Pinyin mixed modeling for precise pronunciation control
+- 🐛 Fixed transformers 4.50+ compatibility issues
+- 🐛 Fixed dictionary parameter access errors
+- 📝 Added IndexTTS2 usage examples and documentation
 
 ### v0.2.0 (2025-10)
 - ✨ Added streaming TTS feature with low-latency real-time speech synthesis
