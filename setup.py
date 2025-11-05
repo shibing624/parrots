@@ -13,7 +13,7 @@ if os.path.exists("README.md"):
 
 setup(
     name='parrots',
-    version='1.2.2',
+    version='1.2.3',
     description='Parrots, Automatic Speech Recognition(**ASR**), Text-To-Speech(**TTS**) toolkit',
     long_description=readme,
     long_description_content_type='text/markdown',
@@ -62,11 +62,8 @@ setup(
     package_dir={'parrots': 'parrots'},
     package_data={
         'parrots': ['*.*', 'data/*', 'data/pinyin2hanzi/*'],
-        'parrots.indextts': ['*.py', '*/*.py', '*/*/*.py', '*/*/*/*.py', '*/*/*/*/*.py'],
-        'parrots.indextts.gpt': ['*.py', '*/*.py'],
-        'parrots.indextts.BigVGAN': ['*.py', '*/*.py', '*/*/*.py'],
-        'parrots.indextts.utils': ['*.py', '*/*.py', '*/*/*.py', '*/*/*/*.py', '*/*/*/*/*.py'],
-        'parrots.indextts.s2mel': ['*.py', '*/*.py', '*/*/*.py'],
+        # indextts 目录下的所有文件都打包（包括 .py, .cpp, .cu, .h, .json 等所有文件）
+        'parrots.indextts': ['**/*'],
     },
     include_package_data=True,
 )

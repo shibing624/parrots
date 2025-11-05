@@ -3,11 +3,8 @@ include LICENSE
 include requirements.txt
 recursive-include parrots *.py
 recursive-include parrots/data *
-recursive-include parrots/indextts *.py
-recursive-include parrots/indextts/gpt *.py
-recursive-include parrots/indextts/BigVGAN *.py
-recursive-include parrots/indextts/utils *.py
-recursive-include parrots/indextts/s2mel *.py
+# indextts 目录下的所有文件都打包
+recursive-include parrots/indextts *
 global-exclude *.pyc
 global-exclude __pycache__
 global-exclude .ipynb_checkpoints
