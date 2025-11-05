@@ -72,7 +72,7 @@ class IndexTTS2:
             # Download from HuggingFace if model_dir is not specified
             from huggingface_hub import snapshot_download
             logger.info(f"Downloading models from HuggingFace. This may take a while...")
-            model_dir = snapshot_download(repo_id="IndexTeam/IndexTTS-2", trust_remote_code=True)
+            model_dir = snapshot_download(repo_id="IndexTeam/IndexTTS-2")
             logger.info(f"Models downloaded from HuggingFace to: {model_dir}")
 
         self.model_dir = model_dir
