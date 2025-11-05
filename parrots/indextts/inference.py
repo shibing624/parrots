@@ -692,11 +692,7 @@ class QwenEmotion:
     def __init__(self, model_dir):
         self.model_dir = model_dir
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_dir)
-        self.model = AutoModelForCausalLM.from_pretrained(
-            self.model_dir,
-            dtype="auto",  # "auto", "bfloat16", "float16", "float32"
-            device_map="auto"
-        )
+        self.model = AutoModelForCausalLM.from_pretrained(self.model_dir)
         self.prompt = "文本情感分类"
         self.cn_key_to_en = {
             "高兴": "happy",
