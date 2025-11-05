@@ -6,6 +6,7 @@ import torch.nn.functional as F
 from loguru import logger
 
 from transformers import GPT2Config, LogitsProcessorList
+from transformers.generation import GenerationMixin
 from parrots.indextts.gpt.transformers_gpt2 import GPT2PreTrainedModel
 from transformers.modeling_outputs import CausalLMOutputWithCrossAttentions
 from transformers.utils.model_parallel_utils import (assert_device_map,
@@ -40,7 +41,7 @@ class ResBlock(nn.Module):
         return F.relu(self.net(x) + x)
 
 
-class GPT2InferenceModel(GPT2PreTrainedModel):
+class GPT2InferenceModel(GPT2PreTrainedModel, GenerationMixin):
     def __init__(self, config, gpt, text_pos_emb, embeddings, norm, linear, kv_cache=False):
         super().__init__(config)
         # Note: the argument named `text_pos_emb` here actually represents the mel position embedding

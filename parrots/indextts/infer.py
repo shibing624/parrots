@@ -11,6 +11,12 @@ from loguru import logger
 import warnings
 import yaml
 
+# 设置 CUDA 架构列表，避免编译时的警告
+if 'TORCH_CUDA_ARCH_LIST' not in os.environ and torch.cuda.is_available():
+    # 自动检测当前 GPU 的计算能力
+    capability = torch.cuda.get_device_capability()
+    os.environ['TORCH_CUDA_ARCH_LIST'] = f"{capability[0]}.{capability[1]}"
+
 warnings.filterwarnings("ignore", category=FutureWarning)
 warnings.filterwarnings("ignore", category=UserWarning)
 
@@ -577,10 +583,8 @@ class IndexTTS2:
                 code_lens = torch.LongTensor(code_lens)
                 code_lens = code_lens.to(self.device)
                 if verbose:
-                    logger.info(f"codes: {codes}, type: {type(codes)}")
-                    logger.info(f"fix codes shape: {codes.shape}, codes type: {codes.dtype}")
-                    logger.info(f"code len: {code_lens}")
-
+                    # logger.info(f"codes: {codes}, type: {type(codes)}")
+                    logger.info(f"codes shape: {codes.shape}, codes type: {codes.dtype}, code len: {code_lens}")
                 m_start_time = time.perf_counter()
                 use_speed = torch.zeros(spk_cond_emb.size(0)).to(spk_cond_emb.device).long()
                 with torch.amp.autocast(text_tokens.device.type, enabled=self.dtype is not None, dtype=self.dtype):
@@ -657,11 +661,10 @@ class IndexTTS2:
             # 直接保存音频到指定路径中
             if os.path.isfile(output_path):
                 os.remove(output_path)
-                logger.info(f"remove old wav file: {output_path}")
             if os.path.dirname(output_path) != "":
                 os.makedirs(os.path.dirname(output_path), exist_ok=True)
             torchaudio.save(output_path, wav.type(torch.int16), sampling_rate)
-            logger.debug(f"wav file saved to: {output_path}")
+            logger.info(f"wav file saved to: {output_path}")
             if stream_return:
                 return None
             yield output_path
