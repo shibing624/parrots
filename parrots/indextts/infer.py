@@ -48,14 +48,16 @@ class IndexTTS2:
             use_fp16 (bool): whether to use fp16.
             device (str): device to use (e.g., 'cuda:0', 'cpu'). If None, it will be set automatically based on the availability of CUDA or MPS.
         """
-        use_cuda = False
+        self.use_cuda = False
         if device is not None:
             self.device = device
             self.use_fp16 = False if device == "cpu" else use_fp16
+            if self.device.startswith("cuda"):
+                self.use_cuda = True
         elif torch.cuda.is_available():
             self.device = "cuda:0"
             self.use_fp16 = use_fp16
-            use_cuda = True
+            self.use_cuda = True
         elif hasattr(torch, "xpu") and torch.xpu.is_available():
             self.device = "xpu"
             self.use_fp16 = use_fp16
@@ -67,6 +69,7 @@ class IndexTTS2:
             self.use_fp16 = False
             logger.debug("Be patient, it may take a while to run in CPU mode.")
 
+        logger.debug(f"Using device: {self.device}, use_fp16: {self.use_fp16}, use_cuda: {self.use_cuda}")
         # Handle model directory and config loading
         if model_dir is None:
             # Download from HuggingFace if model_dir is not specified
@@ -129,6 +132,8 @@ class IndexTTS2:
         )
         self.s2mel = s2mel.to(self.device)
         self.s2mel.models['cfm'].estimator.setup_caches(max_batch_size=1, max_seq_length=8192)
+        if self.use_cuda:
+            self.s2mel.enable_torch_compile()
         self.s2mel.eval()
         logger.debug('s2mel weights loaded from: {}'.format(s2mel_path))
 
@@ -143,7 +148,7 @@ class IndexTTS2:
         logger.debug(f"campplus_model weights loaded from: {campplus_ckpt_path}")
 
         bigvgan_name = self.cfg['vocoder']['name']
-        self.bigvgan = bigvgan.BigVGAN.from_pretrained(bigvgan_name, use_cuda_kernel=use_cuda)
+        self.bigvgan = bigvgan.BigVGAN.from_pretrained(bigvgan_name, use_cuda_kernel=self.use_cuda)
         self.bigvgan = self.bigvgan.to(self.device)
         self.bigvgan.remove_weight_norm()
         self.bigvgan.eval()
