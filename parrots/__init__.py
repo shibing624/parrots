@@ -3,7 +3,7 @@
 @author:XuMing(xuming624@qq.com)
 @description: 
 """
-__version__ = '1.2.3'
+__version__ = '1.2.4'
 
 from parrots.asr import SpeechRecognition
 from parrots.pinyin2hanzi import Pinyin2Hanzi
