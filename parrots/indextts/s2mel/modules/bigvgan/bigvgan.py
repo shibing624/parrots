@@ -8,7 +8,6 @@ import os
 import json
 from pathlib import Path
 from typing import Optional, Union, Dict
-from loguru import logger
 
 import torch
 import torch.nn as nn
@@ -21,6 +20,7 @@ from .alias_free_activation.torch.act import Activation1d as TorchActivation1d
 from .env import AttrDict
 
 from huggingface_hub import PyTorchModelHubMixin, hf_hub_download
+from parrots.log import logger
 
 
 def load_hparams_from_json(path) -> AttrDict:

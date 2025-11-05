@@ -3,7 +3,6 @@ import functools
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from loguru import logger
 
 from transformers import GPT2Config, LogitsProcessorList
 from transformers.generation import GenerationMixin
@@ -16,6 +15,7 @@ from parrots.indextts.gpt.conformer_encoder import ConformerEncoder
 from parrots.indextts.gpt.perceiver import PerceiverResampler
 from parrots.indextts.utils.arch_util import AttentionBlock
 from parrots.indextts.utils.typical_sampling import TypicalLogitsWarper
+from parrots.log import logger
 
 
 def null_position_embeddings(range, dim):

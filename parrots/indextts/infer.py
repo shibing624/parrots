@@ -6,10 +6,16 @@ import librosa
 import torch
 import torchaudio
 from torch.nn.utils.rnn import pad_sequence
-from loguru import logger
+import torch.nn.functional as F
+from transformers import AutoTokenizer, SeamlessM4TFeatureExtractor
+# from modelscope import AutoModelForCausalLM
+from transformers import AutoModelForCausalLM
+from huggingface_hub import hf_hub_download
+import safetensors
+import yaml
+import random
 
 import warnings
-import yaml
 
 # 设置 CUDA 架构列表，避免编译时的警告
 if 'TORCH_CUDA_ARCH_LIST' not in os.environ and torch.cuda.is_available():
@@ -29,13 +35,7 @@ from parrots.indextts.s2mel.modules.commons import load_checkpoint2, MyModel
 from parrots.indextts.s2mel.modules.bigvgan import bigvgan
 from parrots.indextts.s2mel.modules.campplus.DTDNN import CAMPPlus
 from parrots.indextts.s2mel.modules.audio import mel_spectrogram
-
-from transformers import AutoTokenizer, SeamlessM4TFeatureExtractor
-from modelscope import AutoModelForCausalLM
-from huggingface_hub import hf_hub_download
-import safetensors
-import random
-import torch.nn.functional as F
+from parrots.log import logger
 
 
 class IndexTTS2:
