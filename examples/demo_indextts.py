@@ -3,6 +3,9 @@
 @author:XuMing(xuming624@qq.com)
 @description: 
 """
+import sys
+
+sys.path.append('..')
 from parrots.indextts.infer import IndexTTS2
 tts = IndexTTS2(cfg_path="checkpoints/config.yaml", model_dir="checkpoints", use_fp16=False, use_cuda_kernel=False, use_deepspeed=False)
 text = "快躲起来！是他要来了！他要来抓我们了！"
