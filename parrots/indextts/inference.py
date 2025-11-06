@@ -36,6 +36,8 @@ from parrots.indextts.s2mel.modules.campplus.DTDNN import CAMPPlus
 from parrots.indextts.s2mel.modules.audio import mel_spectrogram
 from parrots.log import logger
 
+pwd_path = os.path.abspath(os.path.dirname(__file__))
+
 
 class IndexTTS2:
     def __init__(
@@ -331,17 +333,48 @@ class IndexTTS2:
 
         return emo_vector
 
-    # 原始推理模式
-    def infer(self, spk_audio_prompt, text, output_path,
-              emo_audio_prompt=None, emo_alpha=1.0,
-              emo_vector=None,
-              use_emo_text=False, emo_text=None, use_random=False, interval_silence=200,
-              verbose=False, max_text_tokens_per_segment=120, stream_return=False, more_segment_before=0,
-              **generation_kwargs):
+    # 推理入口
+    def infer(
+            self,
+            text: str,
+            speak_reference_audio_path=None,
+            output_path=None,
+            emo_reference_audio_path=None,
+            emo_alpha=1.0,
+            emo_vector=None,
+            use_emo_text=False,
+            emo_text=None,
+            use_random=False,
+            interval_silence=200,
+            verbose=False,
+            max_text_tokens_per_segment=120,
+            stream_return=False,
+            more_segment_before=0,
+            **generation_kwargs
+    ):
+        """
+        IndexTTS2 inference
+        :param text: text to synthesize
+        :param speak_reference_audio_path: reference audio path for speaker, default use 中文男主播音色
+        :param output_path: output path, default is `generated_{text[:5]}_{time.strftime("%Y%m%d_%H%M%S")}.wav`
+        :param emo_reference_audio_path: reference audio path for emotion, default use speaker reference audio
+        :param emo_alpha: emotion mixing factor, default is 1.0
+        :param emo_vector: emotion vector, default is None
+        :param use_emo_text: use text as emotion reference, default is False
+        :param emo_text: text to generate emotion vector, default is None
+        :param use_random: use random emotion vector, default is False
+        :param interval_silence: silence interval between generated segments, default is 200ms
+        :param verbose: verbose mode, default is False
+        :param max_text_tokens_per_segment: maximum number of text tokens per segment, default is 120
+        :param stream_return: stream return mode, default is False
+        :param more_segment_before: more segment before, default is 0
+        :param generation_kwargs: other generation kwargs
+        :return: None or audio path
+        """
         if stream_return:
             return self.infer_generator(
-                spk_audio_prompt, text, output_path,
-                emo_audio_prompt, emo_alpha,
+                text, speak_reference_audio_path, output_path,
+                emo_reference_audio_path, emo_alpha,
                 emo_vector,
                 use_emo_text, emo_text, use_random, interval_silence,
                 verbose, max_text_tokens_per_segment, stream_return, more_segment_before, **generation_kwargs
@@ -349,8 +382,8 @@ class IndexTTS2:
         else:
             try:
                 return list(self.infer_generator(
-                    spk_audio_prompt, text, output_path,
-                    emo_audio_prompt, emo_alpha,
+                    text, speak_reference_audio_path, output_path,
+                    emo_reference_audio_path, emo_alpha,
                     emo_vector,
                     use_emo_text, emo_text, use_random, interval_silence,
                     verbose, max_text_tokens_per_segment, stream_return, more_segment_before, **generation_kwargs
@@ -358,16 +391,20 @@ class IndexTTS2:
             except IndexError:
                 return None
 
-    def infer_generator(self, spk_audio_prompt, text, output_path,
-                        emo_audio_prompt=None, emo_alpha=1.0,
+    def infer_generator(self, text, speak_reference_audio_path=None, output_path=None,
+                        emo_reference_audio_path=None, emo_alpha=1.0,
                         emo_vector=None,
                         use_emo_text=False, emo_text=None, use_random=False, interval_silence=200,
                         verbose=False, max_text_tokens_per_segment=120, stream_return=False, quick_streaming_tokens=0,
                         **generation_kwargs):
+        if not speak_reference_audio_path:
+            speak_reference_audio_path = os.path.join(pwd_path, '../data/voice/小严-电台男主播-中文普通话-青年男声.mp3')
+        if not output_path:
+            output_path = f'generated_{text[:5]}_{time.strftime("%Y%m%d_%H%M%S")}.wav'
         self._set_gr_progress(0, "starting inference...")
         if verbose:
-            logger.debug(f"origin text:{text}, spk_audio_prompt:{spk_audio_prompt}, "
-                         f"emo_audio_prompt:{emo_audio_prompt}, emo_alpha:{emo_alpha}, "
+            logger.debug(f"text:{text}, speak_reference_audio_path:{speak_reference_audio_path}, "
+                         f"emo_reference_audio_path:{emo_reference_audio_path}, emo_alpha:{emo_alpha}, "
                          f"emo_vector:{emo_vector}, use_emo_text:{use_emo_text}, "
                          f"emo_text:{emo_text}")
         start_time = time.perf_counter()
@@ -375,7 +412,7 @@ class IndexTTS2:
         if use_emo_text or emo_vector is not None:
             # we're using a text or emotion vector guidance; so we must remove
             # "emotion reference voice", to ensure we use correct emotion mixing!
-            emo_audio_prompt = None
+            emo_reference_audio_path = None
 
         if use_emo_text:
             # automatically generate emotion vectors from text prompt
@@ -396,22 +433,22 @@ class IndexTTS2:
                 emo_vector = [int(x * emo_vector_scale * 10000) / 10000 for x in emo_vector]
                 logger.debug(f"scaled emotion vectors to {emo_vector_scale}x: {emo_vector}")
 
-        if emo_audio_prompt is None:
+        if emo_reference_audio_path is None:
             # we are not using any external "emotion reference voice"; use
             # speaker's voice as the main emotion reference audio.
-            emo_audio_prompt = spk_audio_prompt
+            emo_reference_audio_path = speak_reference_audio_path
             # must always use alpha=1.0 when we don't have an external reference voice
             emo_alpha = 1.0
 
         # 如果参考音频改变了，才需要重新生成, 提升速度
-        if self.cache_spk_cond is None or self.cache_spk_audio_prompt != spk_audio_prompt:
+        if self.cache_spk_cond is None or self.cache_spk_audio_prompt != speak_reference_audio_path:
             if self.cache_spk_cond is not None:
                 self.cache_spk_cond = None
                 self.cache_s2mel_style = None
                 self.cache_s2mel_prompt = None
                 self.cache_mel = None
                 torch.cuda.empty_cache()
-            audio, sr = self._load_and_cut_audio(spk_audio_prompt, 15, verbose)
+            audio, sr = self._load_and_cut_audio(speak_reference_audio_path, 15, verbose)
             audio_22k = torchaudio.transforms.Resample(sr, 22050)(audio)
             audio_16k = torchaudio.transforms.Resample(sr, 16000)(audio)
 
@@ -440,7 +477,7 @@ class IndexTTS2:
             self.cache_spk_cond = spk_cond_emb
             self.cache_s2mel_style = style
             self.cache_s2mel_prompt = prompt_condition
-            self.cache_spk_audio_prompt = spk_audio_prompt
+            self.cache_spk_audio_prompt = speak_reference_audio_path
             self.cache_mel = ref_mel
         else:
             style = self.cache_s2mel_style
@@ -461,11 +498,11 @@ class IndexTTS2:
             emovec_mat = torch.sum(emovec_mat, 0)
             emovec_mat = emovec_mat.unsqueeze(0)
 
-        if self.cache_emo_cond is None or self.cache_emo_audio_prompt != emo_audio_prompt:
+        if self.cache_emo_cond is None or self.cache_emo_audio_prompt != emo_reference_audio_path:
             if self.cache_emo_cond is not None:
                 self.cache_emo_cond = None
                 torch.cuda.empty_cache()
-            emo_audio, _ = self._load_and_cut_audio(emo_audio_prompt, 15, verbose, sr=16000)
+            emo_audio, _ = self._load_and_cut_audio(emo_reference_audio_path, 15, verbose, sr=16000)
             emo_inputs = self.extract_features(emo_audio, sampling_rate=16000, return_tensors="pt")
             emo_input_features = emo_inputs["input_features"]
             emo_attention_mask = emo_inputs["attention_mask"]
@@ -474,7 +511,7 @@ class IndexTTS2:
             emo_cond_emb = self.get_emb(emo_input_features, emo_attention_mask)
 
             self.cache_emo_cond = emo_cond_emb
-            self.cache_emo_audio_prompt = emo_audio_prompt
+            self.cache_emo_audio_prompt = emo_reference_audio_path
         else:
             emo_cond_emb = self.cache_emo_cond
 
@@ -486,11 +523,11 @@ class IndexTTS2:
 
         text_token_ids = self.tokenizer.convert_tokens_to_ids(text_tokens_list)
         if self.tokenizer.unk_token_id in text_token_ids:
-            logger.debug(
-                f"Warning: input text contains {text_token_ids.count(self.tokenizer.unk_token_id)} unknown tokens (id={self.tokenizer.unk_token_id}):")
-            logger.debug("     Tokens which can't be encoded: ",
-                  [t for t, id in zip(text_tokens_list, text_token_ids) if id == self.tokenizer.unk_token_id])
-            logger.debug(f"     Consider updating the BPE model or modifying the text to avoid unknown tokens.")
+            logger.warning(f"input text contains {text_token_ids.count(self.tokenizer.unk_token_id)} "
+                           f"unknown tokens (id={self.tokenizer.unk_token_id}):")
+            error_tokens = [t for t, id in zip(text_tokens_list, text_token_ids) if id == self.tokenizer.unk_token_id]
+            logger.debug(f"     Tokens which can't be encoded: {error_tokens}")
+            logger.debug(f"     Consider modifying the text to avoid unknown tokens.")
 
         if verbose:
             logger.info(f"text_tokens_list: {text_tokens_list}")
@@ -639,7 +676,7 @@ class IndexTTS2:
                 wavs.append(wav.cpu())  # to cpu before saving
                 if stream_return:
                     yield wav.cpu()
-                    if silence == None:
+                    if silence is None:
                         silence = self.interval_silence(wavs, sampling_rate=sampling_rate,
                                                         interval_silence=interval_silence)
                     yield silence
@@ -676,7 +713,8 @@ class IndexTTS2:
             # 返回以符合Gradio的格式要求
             wav_data = wav.type(torch.int16)
             wav_data = wav_data.numpy().T
-            yield (sampling_rate, wav_data)
+            yield sampling_rate, wav_data
+            return None
 
 
 def find_most_similar_cosine(query_vector, matrix):
@@ -797,12 +835,9 @@ class QwenEmotion:
 
 
 if __name__ == "__main__":
-    prompt_wav = "examples/voice_01.wav"
-    text = '欢迎大家来体验indextts2，并给予我们意见与反馈，谢谢大家。'
-    tts = IndexTTS2(
-        model_dir="checkpoints"
-    )
-    tts.infer(spk_audio_prompt=prompt_wav, text=text, output_path="gen.wav", verbose=True)
+    tts = IndexTTS2()
+    voice_text = '欢迎大家来体验indextts2，并给予我们意见与反馈，谢谢大家。'
+    tts.infer(text=voice_text, output_path="gen.wav", verbose=True)
     char_size = 5
     import string
 
@@ -810,6 +845,6 @@ if __name__ == "__main__":
     for i in range(10):
         text = ''.join(random.choices(string.ascii_letters, k=char_size))
         start_time = time.time()
-        tts.infer(spk_audio_prompt=prompt_wav, text=text, output_path="gen.wav", verbose=True)
+        tts.infer(text=text, output_path="gen.wav", verbose=True)
         time_buckets.append(time.time() - start_time)
     logger.debug(time_buckets)

@@ -186,7 +186,7 @@ from parrots.indextts import IndexTTS2
 
 tts = IndexTTS2()
 text = "你好，欢迎来到北京。这是一个合成录音文件的演示。"
-tts.infer(spk_audio_prompt='examples/voice_01.wav', text=text, output_path="gen.wav", verbose=True)
+tts.infer(text=text, output_path="gen.wav", verbose=True)
 ```
 
 **2. 情感语音合成（使用情感参考音频）**
@@ -199,11 +199,11 @@ from parrots.indextts import IndexTTS2
 tts = IndexTTS2()
 text = "酒楼丧尽天良，开始借机竞拍房间，哎，一群蠢货。"
 tts.infer(
-    spk_audio_prompt='examples/voice_07.wav',  # 说话人音色参考
-    text=text, 
-    output_path="gen.wav",
-    emo_audio_prompt="examples/emo_sad.wav",  # 情感参考音频
-    verbose=True
+   speak_reference_audio_path='examples/voice_07.wav',  # 说话人音色参考
+   text=text,
+   output_path="gen.wav",
+   emo_reference_audio_path="examples/emo_sad.wav",  # 情感参考音频
+   verbose=True
 )
 ```
 
@@ -217,12 +217,12 @@ from parrots.indextts import IndexTTS2
 tts = IndexTTS2()
 text = "酒楼丧尽天良，开始借机竞拍房间，哎，一群蠢货。"
 tts.infer(
-    spk_audio_prompt='examples/voice_07.wav',
-    text=text,
-    output_path="gen.wav",
-    emo_audio_prompt="examples/emo_sad.wav",
-    emo_alpha=0.6,  # 情感强度 60%
-    verbose=True
+   speak_reference_audio_path='examples/voice_07.wav',
+   text=text,
+   output_path="gen.wav",
+   emo_reference_audio_path="examples/emo_sad.wav",
+   emo_alpha=0.6,  # 情感强度 60%
+   verbose=True
 )
 ```
 
@@ -237,12 +237,12 @@ from parrots.indextts import IndexTTS2
 tts = IndexTTS2()
 text = "哇塞！这个爆率也太高了！欧皇附体了！"
 tts.infer(
-    spk_audio_prompt='examples/voice_10.wav',
-    text=text,
-    output_path="gen.wav",
-    emo_vector=[0, 0, 0, 0, 0, 0, 0.45, 0],  # 惊讶情感
-    use_random=False,
-    verbose=True
+   speak_reference_audio_path='examples/voice_10.wav',
+   text=text,
+   output_path="gen.wav",
+   emo_vector=[0, 0, 0, 0, 0, 0, 0.45, 0],  # 惊讶情感
+   use_random=False,
+   verbose=True
 )
 ```
 
@@ -256,13 +256,13 @@ from parrots.indextts import IndexTTS2
 tts = IndexTTS2()
 text = "快躲起来！是他要来了！他要来抓我们了！"
 tts.infer(
-    spk_audio_prompt='examples/voice_12.wav',
-    text=text,
-    output_path="gen.wav",
-    emo_alpha=0.6,
-    use_emo_text=True,  # 启用文本情感分析
-    use_random=False,
-    verbose=True
+   speak_reference_audio_path='examples/voice_12.wav',
+   text=text,
+   output_path="gen.wav",
+   emo_alpha=0.6,
+   use_emo_text=True,  # 启用文本情感分析
+   use_random=False,
+   verbose=True
 )
 ```
 
@@ -277,14 +277,14 @@ tts = IndexTTS2()
 text = "快躲起来！是他要来了！他要来抓我们了！"
 emo_text = "你吓死我了！你是鬼吗？"  # 独立的情感描述
 tts.infer(
-    spk_audio_prompt='examples/voice_12.wav',
-    text=text,
-    output_path="gen.wav",
-    emo_alpha=0.6,
-    use_emo_text=True,
-    emo_text=emo_text,
-    use_random=False,
-    verbose=True
+   speak_reference_audio_path='examples/voice_12.wav',
+   text=text,
+   output_path="gen.wav",
+   emo_alpha=0.6,
+   use_emo_text=True,
+   emo_text=emo_text,
+   use_random=False,
+   verbose=True
 )
 ```
 

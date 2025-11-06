@@ -264,7 +264,7 @@ from parrots.indextts.inference import IndexTTS2
 
 tts = IndexTTS2()
 text = "Translate for me, what is a surprise!"
-tts.infer(spk_audio_prompt='examples/voice_01.wav', text=text, output_path="gen.wav", verbose=True)
+tts.infer(speak_reference_audio_path='examples/voice_01.wav', text=text, output_path="gen.wav", verbose=True)
 ```
 
 2. Using a separate, emotional reference audio file to condition the speech synthesis:
@@ -274,8 +274,8 @@ from parrots.indextts.inference import IndexTTS2
 
 tts = IndexTTS2()
 text = "酒楼丧尽天良，开始借机竞拍房间，哎，一群蠢货。"
-tts.infer(spk_audio_prompt='examples/voice_07.wav', text=text, output_path="gen.wav",
-          emo_audio_prompt="examples/emo_sad.wav", verbose=True)
+tts.infer(speak_reference_audio_path='examples/voice_07.wav', text=text, output_path="gen.wav",
+          emo_reference_audio_path="examples/emo_sad.wav", verbose=True)
 ```
 
 3. When an emotional reference audio file is specified, you can optionally set
@@ -287,8 +287,8 @@ from parrots.indextts.inference import IndexTTS2
 
 tts = IndexTTS2()
 text = "酒楼丧尽天良，开始借机竞拍房间，哎，一群蠢货。"
-tts.infer(spk_audio_prompt='examples/voice_07.wav', text=text, output_path="gen.wav",
-          emo_audio_prompt="examples/emo_sad.wav", emo_alpha=0.9, verbose=True)
+tts.infer(speak_reference_audio_path='examples/voice_07.wav', text=text, output_path="gen.wav",
+          emo_reference_audio_path="examples/emo_sad.wav", emo_alpha=0.9, verbose=True)
 ```
 
 4. It's also possible to omit the emotional reference audio and instead provide
@@ -307,7 +307,7 @@ from parrots.indextts.inference import IndexTTS2
 
 tts = IndexTTS2()
 text = "哇塞！这个爆率也太高了！欧皇附体了！"
-tts.infer(spk_audio_prompt='examples/voice_10.wav', text=text, output_path="gen.wav",
+tts.infer(speak_reference_audio_path='examples/voice_10.wav', text=text, output_path="gen.wav",
           emo_vector=[0, 0, 0, 0, 0, 0, 0.45, 0], use_random=False, verbose=True)
 ```
 
@@ -324,7 +324,8 @@ from parrots.indextts.inference import IndexTTS2
 
 tts = IndexTTS2()
 text = "快躲起来！是他要来了！他要来抓我们了！"
-tts.infer(spk_audio_prompt='examples/voice_12.wav', text=text, output_path="gen.wav", emo_alpha=0.6, use_emo_text=True,
+tts.infer(speak_reference_audio_path='examples/voice_12.wav', text=text, output_path="gen.wav", emo_alpha=0.6,
+          use_emo_text=True,
           use_random=False, verbose=True)
 ```
 
@@ -339,7 +340,8 @@ from parrots.indextts.inference import IndexTTS2
 tts = IndexTTS2()
 text = "快躲起来！是他要来了！他要来抓我们了！"
 emo_text = "你吓死我了！你是鬼吗？"
-tts.infer(spk_audio_prompt='examples/voice_12.wav', text=text, output_path="gen.wav", emo_alpha=0.6, use_emo_text=True,
+tts.infer(speak_reference_audio_path='examples/voice_12.wav', text=text, output_path="gen.wav", emo_alpha=0.6,
+          use_emo_text=True,
           emo_text=emo_text, use_random=False, verbose=True)
 ```
 
