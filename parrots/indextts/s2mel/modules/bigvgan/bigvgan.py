@@ -20,7 +20,6 @@ from .alias_free_activation.torch.act import Activation1d as TorchActivation1d
 from .env import AttrDict
 
 from huggingface_hub import PyTorchModelHubMixin, hf_hub_download
-from parrots.log import logger
 
 
 def load_hparams_from_json(path) -> AttrDict:
@@ -463,10 +462,10 @@ class BigVGAN(
 
         # Download and load pretrained generator weight
         if os.path.isdir(model_id):
-            logger.debug(f"Loading weights from local directory, {model_id}")
+            # logger.debug(f"Loading weights from local directory, {model_id}")
             model_file = os.path.join(model_id, "bigvgan_generator.pt")
         else:
-            logger.debug(f"Loading weights from {model_id}")
+            # logger.debug(f"Loading weights from {model_id}")
             model_file = hf_hub_download(
                 repo_id=model_id,
                 filename="bigvgan_generator.pt",

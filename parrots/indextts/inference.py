@@ -38,6 +38,30 @@ from parrots.log import logger
 
 pwd_path = os.path.abspath(os.path.dirname(__file__))
 
+# 内置音色配置
+DEFAULT_VOICES = {
+    "male_broadcaster": {
+        "path": "../data/voice/小严-电台男主播-中文普通话-青年男声.mp3",
+        "description": "中文男主播 - 青年男声，适合播报、讲解"
+    },
+    "female_young": {
+        "path": "../data/voice/薇薇-傲娇御姐-中文普通话-青年女声.mp3",
+        "description": "傲娇御姐 - 青年女声，适合日常对话"
+    },
+    "male_mature": {
+        "path": "../data/voice/沈毅-沉稳高管-中文普通话-中年男声.mp3",
+        "description": "沉稳高管 - 中年男声，适合正式场合"
+    },
+    "male_magnetic": {
+        "path": "../data/voice/瑞恩-磁性中年男声-美式口音.mp3",
+        "description": "磁性男声 - 美式口音，适合国际化场景"
+    },
+    "male_cantonese": {
+        "path": "../data/voice/阿志-活泼深情男声-中文粤语.mp3",
+        "description": "活泼深情男声 - 粤语，适合粤语场景"
+    }
+}
+
 
 class IndexTTS2:
     def __init__(
@@ -75,7 +99,7 @@ class IndexTTS2:
         if model_dir is None:
             # logger.info(f"Downloading models from HuggingFace. This may take a while...")
             model_dir = snapshot_download(repo_id="IndexTeam/IndexTTS-2")
-            logger.info(f"Models loaded from HuggingFace model, local path: {model_dir}")
+            logger.info(f"Model downloaded from HuggingFace model, local path: {model_dir}")
 
         self.model_dir = model_dir
 
@@ -100,8 +124,7 @@ class IndexTTS2:
             self.gpt.eval().half()
         else:
             self.gpt.eval()
-        logger.debug(f"GPT model loaded successfully from {self.gpt_path}")
-
+        logger.debug(f"model loaded successfully from {self.model_dir}")
         self.gpt.post_init_gpt2_config(use_deepspeed=False, kv_cache=True, half=self.use_fp16)
 
         self.extract_features = SeamlessM4TFeatureExtractor.from_pretrained("facebook/w2v-bert-2.0")
@@ -337,7 +360,7 @@ class IndexTTS2:
     def infer(
             self,
             text: str,
-            speak_reference_audio_path=None,
+            speak_reference_audio_path_or_name="male_broadcaster",
             output_path=None,
             emo_reference_audio_path=None,
             emo_alpha=1.0,
@@ -355,7 +378,10 @@ class IndexTTS2:
         """
         IndexTTS2 inference
         :param text: text to synthesize
-        :param speak_reference_audio_path: reference audio path for speaker, default use 中文男主播音色
+        :param speak_reference_audio_path_or_name:
+           reference audio path or built-in voice name for speaker. Can be a file path or one of:
+           'male_broadcaster', 'female_young', 'male_mature', 'male_magnetic', 'male_cantonese'.
+           Default is 'male_broadcaster' (中文男主播音色)
         :param output_path: output path, default is `generated_{text[:5]}_{time.strftime("%Y%m%d_%H%M%S")}.wav`
         :param emo_reference_audio_path: reference audio path for emotion, default use speaker reference audio
         :param emo_alpha: emotion mixing factor, default is 1.0
@@ -373,7 +399,7 @@ class IndexTTS2:
         """
         if stream_return:
             return self.infer_generator(
-                text, speak_reference_audio_path, output_path,
+                text, speak_reference_audio_path_or_name, output_path,
                 emo_reference_audio_path, emo_alpha,
                 emo_vector,
                 use_emo_text, emo_text, use_random, interval_silence,
@@ -382,7 +408,7 @@ class IndexTTS2:
         else:
             try:
                 return list(self.infer_generator(
-                    text, speak_reference_audio_path, output_path,
+                    text, speak_reference_audio_path_or_name, output_path,
                     emo_reference_audio_path, emo_alpha,
                     emo_vector,
                     use_emo_text, emo_text, use_random, interval_silence,
@@ -391,19 +417,32 @@ class IndexTTS2:
             except IndexError:
                 return None
 
-    def infer_generator(self, text, speak_reference_audio_path=None, output_path=None,
+    def infer_generator(self, text, speak_reference_audio_path_or_name="male_broadcaster", output_path=None,
                         emo_reference_audio_path=None, emo_alpha=1.0,
                         emo_vector=None,
                         use_emo_text=False, emo_text=None, use_random=False, interval_silence=200,
                         verbose=False, max_text_tokens_per_segment=120, stream_return=False, quick_streaming_tokens=0,
                         **generation_kwargs):
-        if not speak_reference_audio_path:
-            speak_reference_audio_path = os.path.join(pwd_path, '../data/voice/小严-电台男主播-中文普通话-青年男声.mp3')
+        # 判断是内置音色名称还是文件路径
+        if speak_reference_audio_path_or_name in DEFAULT_VOICES:
+            # 使用内置音色
+            voice_config = DEFAULT_VOICES[speak_reference_audio_path_or_name]
+            speak_reference_audio_path = os.path.join(pwd_path, voice_config["path"])
+            speak_reference_audio_path = os.path.realpath(speak_reference_audio_path)
+            if verbose:
+                logger.info(
+                    f"Using built-in voice: {speak_reference_audio_path_or_name} - {voice_config['description']}")
+        else:
+            # 使用用户提供的文件路径
+            speak_reference_audio_path = speak_reference_audio_path_or_name
+            if verbose:
+                logger.info(f"Using custom audio file: {speak_reference_audio_path}")
         if not output_path:
             output_path = f'generated_{text[:5]}_{time.strftime("%Y%m%d_%H%M%S")}.wav'
         self._set_gr_progress(0, "starting inference...")
         if verbose:
-            logger.debug(f"text:{text}, speak_reference_audio_path:{speak_reference_audio_path}, "
+            logger.debug(f"text:{text}, speak_reference_audio_path_or_name:{speak_reference_audio_path_or_name}, "
+                         f"resolved_path:{speak_reference_audio_path}, "
                          f"emo_reference_audio_path:{emo_reference_audio_path}, emo_alpha:{emo_alpha}, "
                          f"emo_vector:{emo_vector}, use_emo_text:{use_emo_text}, "
                          f"emo_text:{emo_text}")
@@ -843,8 +882,8 @@ if __name__ == "__main__":
 
     time_buckets = []
     for i in range(10):
-        text = ''.join(random.choices(string.ascii_letters, k=char_size))
+        t = ''.join(random.choices(string.ascii_letters, k=char_size))
         start_time = time.time()
-        tts.infer(text=text, output_path="gen.wav", verbose=True)
+        tts.infer(text=t, output_path="gen.wav", verbose=True)
         time_buckets.append(time.time() - start_time)
     logger.debug(time_buckets)
