@@ -199,7 +199,7 @@ from parrots.indextts import IndexTTS2
 tts = IndexTTS2()
 text = "酒楼丧尽天良，开始借机竞拍房间，哎，一群蠢货。"
 tts.infer(
-   speak_reference_audio_path='examples/voice_07.wav',  # 说话人音色参考
+   speak_reference_audio_path_or_name='examples/voice_07.wav',  # 说话人音色参考
    text=text,
    output_path="gen.wav",
    emo_reference_audio_path="examples/emo_sad.wav",  # 情感参考音频
@@ -217,7 +217,7 @@ from parrots.indextts import IndexTTS2
 tts = IndexTTS2()
 text = "酒楼丧尽天良，开始借机竞拍房间，哎，一群蠢货。"
 tts.infer(
-   speak_reference_audio_path='examples/voice_07.wav',
+   speak_reference_audio_path_or_name='examples/voice_07.wav',
    text=text,
    output_path="gen.wav",
    emo_reference_audio_path="examples/emo_sad.wav",
@@ -237,7 +237,7 @@ from parrots.indextts import IndexTTS2
 tts = IndexTTS2()
 text = "哇塞！这个爆率也太高了！欧皇附体了！"
 tts.infer(
-   speak_reference_audio_path='examples/voice_10.wav',
+   speak_reference_audio_path_or_name='examples/voice_10.wav',
    text=text,
    output_path="gen.wav",
    emo_vector=[0, 0, 0, 0, 0, 0, 0.45, 0],  # 惊讶情感
@@ -256,7 +256,7 @@ from parrots.indextts import IndexTTS2
 tts = IndexTTS2()
 text = "快躲起来！是他要来了！他要来抓我们了！"
 tts.infer(
-   speak_reference_audio_path='examples/voice_12.wav',
+   speak_reference_audio_path_or_name='examples/voice_12.wav',
    text=text,
    output_path="gen.wav",
    emo_alpha=0.6,
@@ -277,7 +277,7 @@ tts = IndexTTS2()
 text = "快躲起来！是他要来了！他要来抓我们了！"
 emo_text = "你吓死我了！你是鬼吗？"  # 独立的情感描述
 tts.infer(
-   speak_reference_audio_path='examples/voice_12.wav',
+   speak_reference_audio_path_or_name='examples/voice_12.wav',
    text=text,
    output_path="gen.wav",
    emo_alpha=0.6,

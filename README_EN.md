@@ -199,7 +199,7 @@ from parrots.indextts import IndexTTS2
 tts = IndexTTS2()
 text = "The tavern is unconscionable, starting to auction rooms, ah, a bunch of fools."
 tts.infer(
-   speak_reference_audio_path='examples/voice_07.wav',  # Speaker timbre reference
+   speak_reference_audio_path_or_name='examples/voice_07.wav',  # Speaker timbre reference
    text=text,
    output_path="gen.wav",
    emo_reference_audio_path="examples/emo_sad.wav",  # Emotion reference audio
@@ -217,7 +217,7 @@ from parrots.indextts import IndexTTS2
 tts = IndexTTS2()
 text = "The tavern is unconscionable, starting to auction rooms, ah, a bunch of fools."
 tts.infer(
-   speak_reference_audio_path='examples/voice_07.wav',
+   speak_reference_audio_path_or_name='examples/voice_07.wav',
    text=text,
    output_path="gen.wav",
    emo_reference_audio_path="examples/emo_sad.wav",
@@ -237,7 +237,7 @@ from parrots.indextts import IndexTTS2
 tts = IndexTTS2()
 text = "Wow! This drop rate is so high! I'm blessed by luck!"
 tts.infer(
-   speak_reference_audio_path='examples/voice_10.wav',
+   speak_reference_audio_path_or_name='examples/voice_10.wav',
    text=text,
    output_path="gen.wav",
    emo_vector=[0, 0, 0, 0, 0, 0, 0.45, 0],  # Surprised emotion
@@ -256,7 +256,7 @@ from parrots.indextts import IndexTTS2
 tts = IndexTTS2()
 text = "Hide quickly! He's coming! He's coming to catch us!"
 tts.infer(
-   speak_reference_audio_path='examples/voice_12.wav',
+   speak_reference_audio_path_or_name='examples/voice_12.wav',
    text=text,
    output_path="gen.wav",
    emo_alpha=0.6,
@@ -277,7 +277,7 @@ tts = IndexTTS2()
 text = "Hide quickly! He's coming! He's coming to catch us!"
 emo_text = "You scared me to death! Are you a ghost?"  # Independent emotion description
 tts.infer(
-   speak_reference_audio_path='examples/voice_12.wav',
+   speak_reference_audio_path_or_name='examples/voice_12.wav',
    text=text,
    output_path="gen.wav",
    emo_alpha=0.6,
