@@ -9,9 +9,10 @@ import time
 import tempfile
 from pathlib import Path
 from typing import Optional, List
+from contextlib import asynccontextmanager
 
 import uvicorn
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, APIRouter
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel, Field
 
@@ -22,19 +23,51 @@ from parrots.log import set_log_level, logger
 # 设置日志级别
 set_log_level("DEBUG")
 
-# 初始化FastAPI应用
-app = FastAPI(
-    title="IndexTTS2 TTS API",
-    description="Text-to-Speech API using IndexTTS2",
-    version="1.0.0"
-)
-
-# 创建API路由器，添加/api前缀
-from fastapi import APIRouter
-api_router = APIRouter(prefix="/api")
+# 配置参数
+HOST = "0.0.0.0"
+PORT = 8005
+MODEL_DIR = None  # 设置为None则从HuggingFace下载，或指定本地路径如: "/path/to/model"
 
 # 全局TTS模型实例
 tts_model: Optional[IndexTTS2] = None
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """应用生命周期管理"""
+    global tts_model
+    # 启动时初始化模型
+    try:
+        logger.info("Initializing IndexTTS2 model...")
+        if MODEL_DIR:
+            logger.info(f"Using model directory: {MODEL_DIR}")
+            tts_model = IndexTTS2(model_dir=MODEL_DIR)
+        else:
+            logger.info("Using default model directory (will download from HuggingFace)")
+            tts_model = IndexTTS2()
+        logger.info("IndexTTS2 model initialized successfully")
+    except Exception as e:
+        logger.error(f"Failed to initialize IndexTTS2 model: {e}")
+        raise
+    
+    yield
+    
+    # 关闭时清理资源
+    if tts_model is not None:
+        logger.info("Shutting down IndexTTS2 model...")
+        tts_model = None
+
+
+# 初始化FastAPI应用，使用lifespan
+app = FastAPI(
+    title="IndexTTS2 TTS API",
+    description="Text-to-Speech API using IndexTTS2",
+    version="1.0.0",
+    lifespan=lifespan
+)
+
+# 创建API路由器，添加/api前缀
+api_router = APIRouter(prefix="/api")
 
 
 class TTSRequest(BaseModel):
@@ -91,34 +124,6 @@ class TTSResponse(BaseModel):
     success: bool
     message: str
     audio_path: Optional[str] = None
-
-
-@app.on_event("startup")
-async def startup_event():
-    """启动时初始化TTS模型"""
-    global tts_model
-    try:
-        logger.info("Initializing IndexTTS2 model...")
-        # 从app.state获取model_dir参数
-        model_dir = getattr(app.state, 'model_dir', None)
-        if model_dir:
-            logger.info(f"Using model directory: {model_dir}")
-            tts_model = IndexTTS2(model_dir=model_dir)
-        else:
-            tts_model = IndexTTS2()
-        logger.info("IndexTTS2 model initialized successfully")
-    except Exception as e:
-        logger.error(f"Failed to initialize IndexTTS2 model: {e}")
-        raise
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """关闭时清理资源"""
-    global tts_model
-    if tts_model is not None:
-        logger.info("Shutting down IndexTTS2 model...")
-        tts_model = None
 
 
 @api_router.get("/")
@@ -203,25 +208,16 @@ app.include_router(api_router)
 
 
 if __name__ == "__main__":
-    import argparse
+    logger.info(f"Starting IndexTTS2 FastAPI server on {HOST}:{PORT}")
+    if MODEL_DIR:
+        logger.info(f"Model directory: {MODEL_DIR}")
+    else:
+        logger.info("Model will be downloaded from HuggingFace")
     
-    parser = argparse.ArgumentParser(description="IndexTTS2 FastAPI Server")
-    parser.add_argument("--host", type=str, default="0.0.0.0", help="Host to bind")
-    parser.add_argument("--port", type=int, default=8005, help="Port to bind")
-    parser.add_argument("--model_dir", type=str, default=None, help="Path to model directory")
-    parser.add_argument("--reload", action="store_true", help="Enable auto-reload")
-    args = parser.parse_args()
-    
-    # 将model_dir保存到app.state中，供startup_event使用
-    app.state.model_dir = args.model_dir
-    
-    logger.info(f"Starting IndexTTS2 FastAPI server on {args.host}:{args.port}")
-    if args.model_dir:
-        logger.info(f"Model directory: {args.model_dir}")
     uvicorn.run(
         "indextts_fastapi_server:app",
-        host=args.host,
-        port=args.port,
-        reload=args.reload
+        host=HOST,
+        port=PORT,
+        reload=False
     )
 
