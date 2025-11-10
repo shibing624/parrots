@@ -99,7 +99,13 @@ async def startup_event():
     global tts_model
     try:
         logger.info("Initializing IndexTTS2 model...")
-        tts_model = IndexTTS2()
+        # 从app.state获取model_dir参数
+        model_dir = getattr(app.state, 'model_dir', None)
+        if model_dir:
+            logger.info(f"Using model directory: {model_dir}")
+            tts_model = IndexTTS2(model_dir=model_dir)
+        else:
+            tts_model = IndexTTS2()
         logger.info("IndexTTS2 model initialized successfully")
     except Exception as e:
         logger.error(f"Failed to initialize IndexTTS2 model: {e}")
@@ -202,10 +208,16 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="IndexTTS2 FastAPI Server")
     parser.add_argument("--host", type=str, default="0.0.0.0", help="Host to bind")
     parser.add_argument("--port", type=int, default=8005, help="Port to bind")
+    parser.add_argument("--model_dir", type=str, default=None, help="Path to model directory")
     parser.add_argument("--reload", action="store_true", help="Enable auto-reload")
     args = parser.parse_args()
     
+    # 将model_dir保存到app.state中，供startup_event使用
+    app.state.model_dir = args.model_dir
+    
     logger.info(f"Starting IndexTTS2 FastAPI server on {args.host}:{args.port}")
+    if args.model_dir:
+        logger.info(f"Model directory: {args.model_dir}")
     uvicorn.run(
         "indextts_fastapi_server:app",
         host=args.host,

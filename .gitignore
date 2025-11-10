@@ -13,6 +13,12 @@ develop-eggs/
 dist/
 downloads/
 eggs/
+.idea/
+.idea
+.vscode/
+.vscode
+.DS_Store
+*/.DS_Store
 .eggs/
 lib/
 lib64/
