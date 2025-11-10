@@ -124,6 +124,7 @@ class TTSResponse(BaseModel):
     success: bool
     message: str
     audio_path: Optional[str] = None
+    file_id: Optional[str] = None
 
 
 @api_router.get("/")
@@ -134,6 +135,7 @@ async def root():
         "version": "1.0.0",
         "endpoints": {
             "/api/tts": "POST - Generate TTS audio",
+            "/api/audio/{file_id}": "GET - Download audio file",
             "/api/health": "GET - Health check"
         }
     }
@@ -153,6 +155,29 @@ async def health_check():
 # 临时目录用于存储生成的音频文件
 temp_dir = Path(tempfile.gettempdir()) / "indextts_audio"
 temp_dir.mkdir(exist_ok=True)
+
+
+@api_router.get("/audio/{file_id}")
+async def download_audio(file_id: str):
+    """
+    下载生成的音频文件
+    
+    Args:
+        file_id: 音频文件ID（不含.wav扩展名）
+    
+    Returns:
+        音频文件
+    """
+    audio_path = temp_dir / f"{file_id}.wav"
+    
+    if not audio_path.exists():
+        raise HTTPException(status_code=404, detail=f"Audio file not found: {file_id}")
+    
+    return FileResponse(
+        path=str(audio_path),
+        media_type="audio/wav",
+        filename=f"{file_id}.wav"
+    )
 
 
 @api_router.post("/tts", response_model=TTSResponse)
@@ -195,7 +220,8 @@ async def generate_tts(request: TTSRequest):
         return TTSResponse(
             success=True,
             message="TTS generated successfully",
-            audio_path=output_path
+            audio_path=output_path,
+            file_id=file_id
         )
     
     except Exception as e:

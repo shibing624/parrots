@@ -43,6 +43,33 @@ class TTSClient:
             print(f"✗ Cannot connect to server: {e}")
             return False
     
+    def download_audio(self, file_id: str, save_path: str) -> bool:
+        """
+        从服务器下载音频文件
+        
+        Args:
+            file_id: 音频文件ID
+            save_path: 保存路径
+        
+        Returns:
+            是否下载成功
+        """
+        try:
+            response = self.session.get(
+                f"{self.base_url}/api/audio/{file_id}",
+                timeout=30
+            )
+            response.raise_for_status()
+            
+            # 保存文件
+            with open(save_path, 'wb') as f:
+                f.write(response.content)
+            
+            return True
+        except Exception as e:
+            print(f"✗ Failed to download audio: {e}")
+            return False
+    
     def generate_tts(
         self,
         text: str,
@@ -114,22 +141,26 @@ class TTSClient:
                 print(f"✗ TTS generation failed: {result.get('message')}")
                 return None
             
-            # 获取服务器返回的音频文件路径
-            server_audio_path = result.get("audio_path")
-            if not server_audio_path:
-                print("✗ No audio path in response")
+            # 获取服务器返回的文件ID
+            file_id = result.get("file_id")
+            if not file_id:
+                print("✗ No file_id in response")
                 return None
             
-            print(f"✓ Audio generated at: {server_audio_path}")
+            print(f"✓ Audio generated on server with file_id: {file_id}")
             
-            # 如果需要保存到指定路径，则复制文件
-            if save_path is not None and save_path != server_audio_path:
-                import shutil
-                os.makedirs(os.path.dirname(save_path) if os.path.dirname(save_path) else '.', exist_ok=True)
-                shutil.copy2(server_audio_path, save_path)
-                print(f"✓ Audio copied to: {save_path}")
+            # 确定本地保存路径
+            if save_path is None:
+                save_path = str(self.temp_dir / f"{file_id}.wav")
             else:
-                save_path = server_audio_path
+                os.makedirs(os.path.dirname(save_path) if os.path.dirname(save_path) else '.', exist_ok=True)
+            
+            # 从服务器下载音频文件
+            print(f"📥 Downloading audio to: {save_path}")
+            if not self.download_audio(file_id, save_path):
+                return None
+            
+            print(f"✓ Audio downloaded successfully")
             
             # 播放音频
             if play_audio:
