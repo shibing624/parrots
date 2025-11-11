@@ -30,6 +30,7 @@ wheels/
 .installed.cfg
 *.egg
 MANIFEST
+.gradio/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -52,6 +53,8 @@ coverage.xml
 *.cover
 .hypothesis/
 .pytest_cache/
+.python-version
+.ruff_cache/
 
 # Translations
 *.mo

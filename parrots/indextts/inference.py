@@ -126,6 +126,14 @@ class IndexTTS2:
             self.gpt.eval()
         logger.debug(f"model loaded successfully from {self.model_dir}")
         self.gpt.post_init_gpt2_config(use_deepspeed=False, kv_cache=True, half=self.use_fp16)
+        
+        # Enable torch.compile for GPT model if using CUDA
+        if self.use_cuda:
+            try:
+                self.gpt = torch.compile(self.gpt, mode="reduce-overhead")
+                logger.debug("GPT model compiled with torch.compile")
+            except Exception as e:
+                logger.warning(f"Failed to compile GPT model: {e}")
 
         self.extract_features = SeamlessM4TFeatureExtractor.from_pretrained("facebook/w2v-bert-2.0")
         self.semantic_model, self.semantic_mean, self.semantic_std = build_semantic_model(
@@ -487,6 +495,7 @@ class IndexTTS2:
                 self.cache_s2mel_prompt = None
                 self.cache_mel = None
                 torch.cuda.empty_cache()
+            
             audio, sr = self._load_and_cut_audio(speak_reference_audio_path, 15, verbose)
             audio_22k = torchaudio.transforms.Resample(sr, 22050)(audio)
             audio_16k = torchaudio.transforms.Resample(sr, 16000)(audio)
@@ -496,16 +505,20 @@ class IndexTTS2:
             attention_mask = inputs["attention_mask"]
             input_features = input_features.to(self.device)
             attention_mask = attention_mask.to(self.device)
+            
             spk_cond_emb = self.get_emb(input_features, attention_mask)
 
             _, S_ref = self.semantic_codec.quantize(spk_cond_emb)
+            
             ref_mel = self.mel_fn(audio_22k.to(spk_cond_emb.device).float())
             ref_target_lengths = torch.LongTensor([ref_mel.size(2)]).to(ref_mel.device)
+            
             feat = torchaudio.compliance.kaldi.fbank(audio_16k.to(ref_mel.device),
                                                      num_mel_bins=80,
                                                      dither=0,
                                                      sample_frequency=16000)
             feat = feat - feat.mean(dim=0, keepdim=True)  # feat2另外一个滤波器能量组特征[922, 80]
+            
             style = self.campplus_model(feat.unsqueeze(0))  # 参考音频的全局style2[1,192]
 
             prompt_condition = self.s2mel.models['length_regulator'](S_ref,
@@ -541,12 +554,15 @@ class IndexTTS2:
             if self.cache_emo_cond is not None:
                 self.cache_emo_cond = None
                 torch.cuda.empty_cache()
+            
             emo_audio, _ = self._load_and_cut_audio(emo_reference_audio_path, 15, verbose, sr=16000)
+            
             emo_inputs = self.extract_features(emo_audio, sampling_rate=16000, return_tensors="pt")
             emo_input_features = emo_inputs["input_features"]
             emo_attention_mask = emo_inputs["attention_mask"]
             emo_input_features = emo_input_features.to(self.device)
             emo_attention_mask = emo_attention_mask.to(self.device)
+            
             emo_cond_emb = self.get_emb(emo_input_features, emo_attention_mask)
 
             self.cache_emo_cond = emo_cond_emb
@@ -603,7 +619,6 @@ class IndexTTS2:
                 text_token_syms = self.tokenizer.convert_ids_to_tokens(text_tokens[0].tolist())
                 logger.info(f"text_token_syms is same as segment tokens, {text_token_syms == sent}")
 
-            m_start_time = time.perf_counter()
             with torch.no_grad():
                 with torch.amp.autocast(text_tokens.device.type, enabled=self.dtype is not None, dtype=self.dtype):
                     emovec = self.gpt.merge_emovec(
@@ -618,6 +633,7 @@ class IndexTTS2:
                         emovec = emovec_mat + (1 - torch.sum(weight_vector)) * emovec
                         # emovec = emovec_mat
 
+                    gpt_infer_start = time.perf_counter()
                     codes, speech_conditioning_latent = self.gpt.inference_speech(
                         spk_cond_emb,
                         text_tokens,
@@ -636,8 +652,9 @@ class IndexTTS2:
                         max_generate_length=max_mel_tokens,
                         **generation_kwargs
                     )
+                    gpt_infer_time = time.perf_counter() - gpt_infer_start
 
-                gpt_gen_time += time.perf_counter() - m_start_time
+                gpt_gen_time += gpt_infer_time
                 if not has_warned and (codes[:, -1] != self.stop_mel_token).any():
                     warnings.warn(
                         f"WARN: generation stopped due to exceeding `max_mel_tokens` ({max_mel_tokens}). "
@@ -663,7 +680,8 @@ class IndexTTS2:
                 if verbose:
                     # logger.info(f"codes: {codes}, type: {type(codes)}")
                     logger.info(f"codes shape: {codes.shape}, codes type: {codes.dtype}, code len: {code_lens}")
-                m_start_time = time.perf_counter()
+                
+                gpt_forward_start = time.perf_counter()
                 use_speed = torch.zeros(spk_cond_emb.size(0)).to(spk_cond_emb.device).long()
                 with torch.amp.autocast(text_tokens.device.type, enabled=self.dtype is not None, dtype=self.dtype):
                     latent = self.gpt(
@@ -678,14 +696,16 @@ class IndexTTS2:
                         emo_vec=emovec,
                         use_speed=use_speed,
                     )
-                    gpt_forward_time += time.perf_counter() - m_start_time
+                    gpt_fwd_time = time.perf_counter() - gpt_forward_start
+                    gpt_forward_time += gpt_fwd_time
 
                 dtype = None
                 with torch.amp.autocast(text_tokens.device.type, enabled=dtype is not None, dtype=dtype):
-                    m_start_time = time.perf_counter()
                     diffusion_steps = 25
                     inference_cfg_rate = 0.7
+                    
                     latent = self.s2mel.models['gpt_layer'](latent)
+                    
                     S_infer = self.semantic_codec.quantizer.vq2emb(codes.unsqueeze(1))
                     S_infer = S_infer.transpose(1, 2)
                     S_infer = S_infer + latent
@@ -695,23 +715,29 @@ class IndexTTS2:
                                                                  ylens=target_lengths,
                                                                  n_quantizers=3,
                                                                  f0=None)[0]
+                    
                     cat_condition = torch.cat([prompt_condition, cond], dim=1)
+                    
+                    cfm_start = time.perf_counter()
                     vc_target = self.s2mel.models['cfm'].inference(cat_condition,
                                                                    torch.LongTensor([cat_condition.size(1)]).to(
                                                                        cond.device),
                                                                    ref_mel, style, None, diffusion_steps,
                                                                    inference_cfg_rate=inference_cfg_rate)
                     vc_target = vc_target[:, :, ref_mel.size(-1):]
-                    s2mel_time += time.perf_counter() - m_start_time
+                    cfm_time = time.perf_counter() - cfm_start
+                    s2mel_time += cfm_time
 
-                    m_start_time = time.perf_counter()
+                    vocoder_start = time.perf_counter()
                     wav = self.bigvgan(vc_target.float()).squeeze().unsqueeze(0)
-                    bigvgan_time += time.perf_counter() - m_start_time
+                    vocoder_time = time.perf_counter() - vocoder_start
+                    bigvgan_time += vocoder_time
                     wav = wav.squeeze(1)
 
                 wav = torch.clamp(32767 * wav, -32767.0, 32767.0)
                 if verbose:
                     logger.info(f"wav shape: {wav.shape}, min: {wav.min()}, max: {wav.max()}")
+                
                 wavs.append(wav.cpu())  # to cpu before saving
                 if stream_return:
                     yield wav.cpu()
@@ -725,13 +751,17 @@ class IndexTTS2:
         wavs = self.insert_interval_silence(wavs, sampling_rate=sampling_rate, interval_silence=interval_silence)
         wav = torch.cat(wavs, dim=1)
         wav_length = wav.shape[-1] / sampling_rate
-        logger.debug(f"gpt_gen_time: {gpt_gen_time:.2f} seconds")
-        logger.debug(f"gpt_forward_time: {gpt_forward_time:.2f} seconds")
-        logger.debug(f"s2mel_time: {s2mel_time:.2f} seconds")
-        logger.debug(f"bigvgan_time: {bigvgan_time:.2f} seconds")
-        logger.debug(f"Total inference time: {end_time - start_time:.2f} seconds")
-        logger.debug(f"Generated audio length: {wav_length:.2f} seconds")
-        logger.debug(f"RTF: {(end_time - start_time) / wav_length:.4f}")
+        
+        if verbose:
+            logger.info("[PERF] ========== Performance Summary ==========")
+            logger.info(f"[PERF] GPT inference_speech total: {gpt_gen_time:.3f}s")
+            logger.info(f"[PERF] GPT forward (latent) total: {gpt_forward_time:.3f}s")
+            logger.info(f"[PERF] S2Mel (CFM diffusion) total: {s2mel_time:.3f}s")
+            logger.info(f"[PERF] BigVGAN vocoder total: {bigvgan_time:.3f}s")
+            logger.info(f"[PERF] Total inference time: {end_time - start_time:.3f}s")
+            logger.info(f"[PERF] Generated audio length: {wav_length:.2f}s")
+            logger.info(f"[PERF] RTF (Real-Time Factor): {(end_time - start_time) / wav_length:.4f}")
+            logger.info("[PERF] =============================================")
 
         # save audio
         wav = wav.cpu()  # to cpu
